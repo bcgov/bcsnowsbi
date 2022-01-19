@@ -1,0 +1,632 @@
+---
+title: "Snow Bulletin Figures and Tables"
+subtitle: "Updated: `r Sys.time()`"
+classoption: xcolor = table
+output:
+  pdf_document: default
+params:
+  survey_date: !r Sys.Date()
+  exceptions: NaN
+  incorrect_sites: NaN
+  incorrect_data: NaN
+header-includes: 
+  \usepackage{xcolor} 
+  \usepackage{subcaption}
+  \usepackage{booktabs}
+  \usepackage{longtable}
+  \usepackage{pdflscape}
+  \newcommand{\blandscape}{\begin{landscape}}
+  \newcommand{\elandscape}{\end{landscape}}
+  \usepackage{array}
+  \usepackage{multirow}
+  \usepackage{wrapfig}
+  \usepackage{float}
+  \usepackage{colortbl}
+  \usepackage{pdflscape}
+  \usepackage{tabu}
+  \usepackage{threeparttable}
+  \usepackage{threeparttablex}
+  \usepackage[normalem]{ulem}
+  \usepackage{makecell}
+
+---
+
+```{r setup, echo=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+options(tinytex.verbose = TRUE)
+
+# ===============================================================================
+# Packages
+# ===============================================================================
+#source("Snow_Packages_Scripts.R")
+library(dplyr)
+library(bcsnowsbi)
+library(bcsnowstats)
+library(kableExtra)
+library(ggplot2)
+library(bcsnowplots)
+
+# =====================
+# Functions
+# =====================
+
+# function for returning SBI
+return_SBI <- function(basin_input, data){
+  sub <- data %>%
+    dplyr::filter(basin == basin_input) %>%
+    dplyr::select("SBI_newnewnormals_mean")
+  round(sub[1,1], digits =0)
+}
+
+#survey_date <- as.Date("01-03-2020", "%d-%m-%Y")
+#exceptions <- NA
+#incorrect_sites <- NA
+#incorrect_data <- NA
+#use_cache = "Yes"
+#overwrite_cache = "No"
+
+#bulletin_date = "1May2020"
+#survey_date <- as.Date("01-05-2020", "%d-%m-%Y") # CHANGE HERE ONLY
+#exceptions <- c("1E08P")
+#incorrect_sites <- NA
+#incorrect_data <- NA
+#use_cache = "Yes"
+#overwrite_cache = "No"
+
+survey_date <- as.Date("01-06-2021", "%d-%m-%Y") # CHANGE HERE ONLY
+exceptions <- c("1D17P") # DOn't use Chilliwack River
+incorrect_sites <- NA
+incorrect_data <- NA
+  
+# =====================
+# Data
+# =====================
+# Survey date
+survey_period_i = paste0(format(survey_date, "%m"), "-", format(survey_date, "%d"))
+surveydate_full <- paste0(format(survey_date, "%B"), " ", format(survey_date, "%d"), ", ", lubridate::year(survey_date))
+get_year = lubridate::year(survey_date)
+
+# Retrieve manual data for the survey date you want
+manual_data <- bcsnowdata::get_manual_swe(station_id = "All", 
+                              survey_period = survey_period_i,
+                              get_year = get_year) %>%
+  dplyr::filter(!is.na(swe_mm)) %>%
+  dplyr::arrange(station_id)
+
+# Check to see if the SBI file exists for the survey period. If not, run the function to callculate the SBI for today
+
+#SBI <- tryCatch(read.csv(paste0("V:/Real-time_Data/ASP_daily_interactive/data/SBI/SBI_AllBasins_", get_year, "-", survey_period_i, ".csv"),
+#                         stringsAsFactors = FALSE),
+#                error = function(e) NaN)
+
+#if (all(is.na(SBI))) { # if the daily SBI hasn't been read yet, create it!
+# Calculate SBI values using the SBI_byyear_function()
+SBI_list <- bcsnowsbi::sbi_bybasin_function(date_sbi = survey_date, 
+                                     save_csv = "Yes", 
+                                     all_basins = "Yes",
+                                     exceptions = exceptions, 
+                                     incorrect_sites = incorrect_sites, 
+                                     incorrect_data = incorrect_data,
+                                     path = "V:/Real-time_Data/ASP_daily_interactive/data/SBI",
+                                     force = FALSE,
+                                     use_sbi_cache = TRUE) # Try to see if there is SBI data within the cache for the date
+#}
+
+# Read in SBI data within the archived file
+SBI_path <- paste0("V:/Real-time_Data/ASP_daily_interactive/data/SBI/SBI_AllBasins_", get_year, "-", survey_period_i, ".csv")
+#SBI <- read.csv(SBI_path, stringsAsFactors = FALSE)
+ 
+SBI <- SBI_list[[1]]
+
+# Read in site data
+SBI_sites_path <- paste0("V:/Real-time_Data/ASP_daily_interactive/data/SBI/SBI_sites_AllBasins_", get_year, "-", survey_period_i, ".csv")
+SBI_sites_i <- read.csv(SBI_sites_path, stringsAsFactors = FALSE, header = TRUE, fill=TRUE, row.names = NULL) 
+#SBI_sites_i <- SBI_list[[2]]
+ 
+
+if ("row.names" %in% colnames(SBI_sites_i)) {
+  colnames(SBI_sites_i) <- c(colnames(SBI_sites_i)[colnames(SBI_sites_i) != "row.names"], "geometry_2") 
+  
+  SBI_sites_i <- SBI_sites_i %>%
+    dplyr::mutate(geometry = paste(geometry, geometry_2, sep = ",")) %>%
+    dplyr::select(-geometry_2)
+}
+
+SBI_sites_i <- SBI_sites_i %>%
+  dplyr::arrange(basin, station_id, date_utc)
+
+# Add in elevation
+el_site <- data.frame(bcsnowsbi::elevation_data()) %>%
+   dplyr::select(station_id, elevation, name) %>%
+   dplyr::rename(station_name = name) %>%
+   dplyr::arrange(station_id) 
+ 
+SBI_sites_i <- full_join(SBI_sites_i, el_site, by = c("station_id", "station_name")) %>%
+   dplyr::filter(!is.na(swe_mm))
+ 
+```
+
+## Snow Index Table
+
+```{r Table1, echo = FALSE, message=FALSE, warning=FALSE}
+
+# Table of SBI values by basin
+#remove_basins <- c("Nicola_old", "FraserPlateau", "LillBridge", "Quesnel", "LowerThompson") # basins to leave off table
+
+remove_basins <- c()
+
+# Arrange into table of SBI values
+SBI_table <- SBI %>%
+  dplyr::select(basin, SBI_newnewnormals_mean) %>%
+  dplyr::filter(!(basin %in% remove_basins)) %>%
+  dplyr::rename(SBI = SBI_newnewnormals_mean) %>%
+  dplyr::mutate(basin = gsub("([[:lower:]])([[:upper:]])", "\\1 \\2", basin)) %>%
+  dplyr::mutate(SBI = round(SBI, digits = 0)) %>%
+  dplyr::rename(`SBI (%)` = SBI)
+
+SBI_table %>% 
+  knitr::kable(format = "latex", caption = paste0("SBI Values: ", surveydate_full), booktabs = T) %>%
+  kable_styling(latex_options = "striped")
+
+# split into 4 columns from two
+t1 = SBI_table[1:(nrow(SBI_table)/2+0.5),]
+t2 = SBI_table[(nrow(SBI_table)/2+1.5):nrow(SBI_table),]
+
+```
+
+
+## Bar graph of current SBI values
+
+```{r SBI_bar1, echo = FALSE, message=FALSE, warning=FALSE, results='hide',fig.keep='all'}
+snow_palette <- c("#FFFFFF", "#E50000", "#E69800", "#FFD380", "#FFFF00",
+                  "#AAFF01", "#00FEC4", "#01C5FF", "#0071FE", "#002573")
+
+SBI_table$basin <- factor(SBI_table$basin,levels = SBI_table$basin)
+SBI_table <- SBI_table %>%
+  dplyr::rename(SBI = `SBI (%)`) %>%
+  dplyr::mutate(scale_slots = case_when(
+    is.na(SBI) ~ "NO DATA",
+    SBI < 50 ~ "0-49%",
+    SBI < 60 ~ "50-59%",
+    SBI < 70 ~ "60 - 69%",
+    SBI < 80 ~ "70 - 79%",
+    SBI < 90 ~ "80 - 89%",
+    SBI < 110 ~ "90 - 109%",
+    SBI < 125 ~ "110 - 125%",
+    SBI < 140 ~ "126 - 140%",
+    SBI >= 140 ~ ">140%"
+  ))
+
+# Plot
+ggplot2::ggplot(data = SBI_table, aes(x = basin, y = SBI, fill = scale_slots, show.legend = FALSE)) +
+  geom_bar(stat="identity", position="dodge") +
+  scale_y_continuous(name = "Snow Basin Index (%)", limits = c(0,140), breaks = seq(0,140, by =20), expand=c(0,0)) +
+  geom_text(aes(label=SBI), position=position_dodge(width=0.9), vjust=-0.25, color="black", size = 3) +
+  xlab("Basin") +
+  ggtitle(paste0("SBI Values - ", surveydate_full)) +
+  geom_hline(yintercept = 100, linetype = "dotted") +
+  #scale_x_discrete(name = "Year", limits=seq("2011", "2019"), expand=c(0,0)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual("SBI Range", values = c("NO DATA" = "black", "0-49%" = snow_palette[2], 
+                                         "50-59%" = snow_palette[3], "60 - 69%" = snow_palette[4], "70 - 79%" = snow_palette[5], "80 - 89%" = snow_palette[6],
+                                         "90 - 109%" = snow_palette[7], "110 - 125%" = snow_palette[8], "126 - 140%" = snow_palette[9], ">140%" = snow_palette[10]),
+                      guide = guide_legend(reverse = FALSE)) +
+  theme(legend.position = "none") 
+```
+
+\newpage
+\blandscape
+
+## Table of statistics for sites used within the SBI calculation
+
+```{r Table_sites, echo = FALSE, message=FALSE, warning=FALSE}
+# Table of the sites used to make the SBI table
+# ensure that the manual sites are all present!
+
+# Append the elevation to the sites within the 'sites' dataframe that contains all of the statistics data.
+# Table of SBI values by basin
+#remove_basins <- c("HaidaGwaii", "Nicola_old", "FraserPlateau", "LillBridge", "Quesnel", "LowerThompson") # basins to leave off table
+
+remove_basins <- c("HaidaGwaii", "Nicola_old") # basins to leave off table
+
+SBI_sites <- SBI_sites_i %>%
+  dplyr::arrange(basin) %>%
+  dplyr::filter(!(basin %in% remove_basins)) %>%
+  #dplyr::select(-Percent_normal, -Normal_SWE_mean, -Survey_Period) %>%
+  dplyr::select(basin, station_id, station_name, date_utc, station_type, elevation, numberofyears, 
+                swe_mm, 
+                Q50, percent_Q50,
+                swe_mean, percent_mean,
+                #swenormal_prev, percent_normal_prev, 
+                normal_swe_mean, percent_normal_mean, percent_normal_median,
+                percentile, 
+                current_rank_min, current_rank_max, 
+                min, date_min_utc,
+                max, date_max_utc,
+                mean_day_sd, swe_y_1, swe_y_2) %>%
+  dplyr::mutate(percent_mean = round(swe_mm/swe_mean*100, digits = 0)) %>%
+  dplyr::mutate('SWE Minimum (mm; year)' = paste0(round(min, digits = 0), " (", lubridate::year(date_min_utc), ")"), 
+                'SWE Maximum (mm; year)' = paste0(round(max, digits = 0), " (", lubridate::year(date_max_utc), ")")) %>%
+  dplyr::select(-min, -max, -date_min_utc, -date_max_utc) %>%
+  dplyr::rename('Basin' = basin,
+                'Station ID' = station_id,
+                'Station Name' = station_name,
+                "Elevation (masl)" = elevation,
+                'Date of Survey' = date_utc,
+                'Measured SWE (mm)' = swe_mm,
+                'Median Survey Date SWE (POR; mm)' = Q50, 
+                'Percent of Median SWE (POR; %)' = percent_Q50, 
+                "Mean Survey Date SWE (POR; mm)" = swe_mean,
+                'Percent of Mean SWE (%)' = percent_mean,
+                'Percentile' = percentile, 
+                "Rank (max)" = current_rank_max,
+                "Rank (min)" = current_rank_min,
+                "Length of Data Record (years)" = numberofyears,
+                'SWE Mean Normal (1991-2020; mm)' = normal_swe_mean, 'Percent of Mean Normal (%)' = percent_normal_mean, 
+                'Percent of Median Normal (%)' = percent_normal_median,
+                'Station Type' = station_type, 
+                'Snow depth (mean day; cm)' = mean_day_sd, 
+                '2020 SWE (mm)' = swe_y_1, '2019 SWE (mm)' = swe_y_2) %>%
+ # dplyr::select(-'Station Name') %>%
+  dplyr::mutate(basin = gsub("([[:lower:]])([[:upper:]])", "\\1 \\2", Basin)) %>%
+  dplyr::arrange(basin, `Station Type`, `Length of Data Record (years)`) %>%
+  dplyr::distinct(`Station Name`, basin, `Elevation (masl)`, `Length of Data Record (years)`, .keep_all = TRUE)
+
+SBI_sites <- round_df(x = SBI_sites, digits = 0)
+
+# Function for identifying the rows by basin
+basins_rows <- data.frame(unique(SBI_table$basin))
+colnames(basins_rows) <- c("basin")
+basins_rows <- basins_rows %>%
+  dplyr::mutate(basin = gsub("([[:lower:]])([[:upper:]])", "\\1 \\2", basin)) 
+
+# Get the max and min vlaue of a rown number 
+for (i in 1:dim(basins_rows)[1]){ 
+ basins_rows$min[i] = min(which(SBI_sites$basin == basins_rows[i,1]))
+ basins_rows$max[i]= max(which(SBI_sites$basin == basins_rows[i,1]))
+}
+
+# Rearrange the data columns
+SBI_sites <- SBI_sites[,c("Basin", "Station ID", "Station Name", "Station Type", "Elevation (masl)", "Date of Survey", 
+                                     "Measured SWE (mm)", "Snow depth (mean day; cm)", 
+                            "Median Survey Date SWE (POR; mm)", 
+                            "Percent of Median SWE (POR; %)",
+                            "Mean Survey Date SWE (POR; mm)", 
+                            "Percent of Mean SWE (%)", 
+                            "SWE Mean Normal (1991-2020; mm)", 
+                            "Percent of Mean Normal (%)" ,
+                            'Percent of Median Normal (%)',
+                            "Percentile", "Rank (min)", "Rank (max)",
+                            "SWE Minimum (mm; year)", "SWE Maximum (mm; year)",   
+                            "Length of Data Record (years)", "2020 SWE (mm)", "2019 SWE (mm)")]
+
+
+# Write table - boundary
+
+
+# Write table - function
+basin_tables <- function(basin_input, SBI_sites, SBI_table){
+  
+ SBI_sites %>% 
+   dplyr::filter(Basin == basin_input) %>%
+   dplyr::select(-`Date of Survey`, -Basin) %>%
+   knitr::kable(format = "latex", longtable = TRUE, booktabs = T, align = 'c', caption = as.character(basin_input)) %>%
+   #kable_styling(latex_options = "striped") %>%
+   row_spec(0, angle = 45) %>%
+   kable_styling(latex_options = c("striped","hold_position", "repeat_header", "scale_down"), full_width = T) %>%
+   column_spec(2, width = "5em") %>%
+   column_spec(3, width = "4em") %>%
+   #column_spec(5, border_left = T) %>%
+   #column_spec(7, border_left = T) %>%
+   #column_spec(11, border_left = T) %>%
+   #column_spec(13, border_left = T) %>%
+   #column_spec(19, border_left = T) %>%
+   footnote(general = paste0(basin_input, " SBI = ", SBI_table$SBI[SBI_table$Basin == as.character(basin_input)], "%"),
+           general_title = "Basin: ", title_format = c("bold"))
+}
+
+basin_tables(basin_input = basins_rows[1,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[2,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[3,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[4,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[5,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[6,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[7,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[8,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[9,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[10,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[11,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[12,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[13,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[14,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[15,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[16,1], SBI_sites, SBI_table)
+#basin_tables(basin_input = basins_rows[17,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[18,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[19,1], SBI_sites, SBI_table)
+basin_tables(basin_input = basins_rows[20,1], SBI_sites, SBI_table)
+#basin_tables(basin_input = basins_rows[21,1], SBI_sites, SBI_table)
+#basin_tables(basin_input = basins_rows[22,1], SBI_sites, SBI_table)
+#basin_tables(basin_input = basins_rows[23,1], SBI_sites, SBI_table)
+#basin_tables(basin_input = basins_rows[24,1], SBI_sites, SBI_table)
+#basin_tables(basin_input = basins_rows[25,1], SBI_sites, SBI_table)
+#basin_tables(basin_input = basins_rows[26,1], SBI_sites, SBI_table)
+
+```
+\elandscape
+\newpage
+
+## Map of SBI values by basin
+Provincial Average = `r return_SBI(basin_input = "Province", data = SBI)`%
+
+```{r Map, echo=FALSE, message = FALSE, warning=FALSE, results='hide',fig.keep='all', fig.height = 12, fig.width = 12, fig.align = "center"}
+# Write the snow map using the snow_map function
+map <- bcsnowplots::snow_map(SBI_input = SBI_path,
+         output = "G:/Snow/Statistics/SBI_tables/")
+
+#png(paste0(output, "snow_basins_map.png"), height = 12, width = 12, res = 300, units = "in")
+map
+#grid::grid.raster(bc_logo, x=0.85, y = 0.65, width = 0.2, height = 0.2)
+#dev.off()
+
+```
+
+
+```{r BarGraph, echo=FALSE, message=FALSE, warning=FALSE, results='hide', fig.keep='all'}
+## Plot the SBI new and old by year.
+# get the previously calculated SBI values. Takes too long to actually redo
+
+
+# REDO THIS USING THE ARCHIVE FILE AND THE CURRENT YEAR ARCHIVE FILE #####################
+
+#temp = list.files(path = "G:/Snow/Statistics/SBI_tables", pattern="SBI_AllBasins_2*")
+
+#SBI_all <- lapply(paste0("G:/Snow/Statistics/SBI_tables/", temp), read.csv) %>%
+#  dplyr::bind_rows() %>%
+#  dplyr::filter(!is.na(Survey_period))
+  #filter(!(Basin %in% remove_basins)) 
+
+#SBI_all$Survey_period <- as.Date(SBI_all$Survey_period, format = "%m-%d-%Y")
+
+#SBI_Jan <- dplyr::filter(SBI_all, grepl(survey_period_i,Survey_period))
+# Table of SBI values by basin
+#remove_basins <- c("HaidaGwaii", "Nicola_old", "FraserPlateau", "LillBridge", "Quesnel", "LowerThompson") # basins to leave off table
+
+#SBI_plot <- SBI_Jan %>%
+  #mutate(Survey_period <- as.Date(SBI_all$Survey_period, format = "%d-%m-%Y")) %>%
+#  dplyr::filter(!(Basin %in% remove_basins)) %>%
+  #arrange(Basin) %>%
+#  dplyr::mutate(year = lubridate::year(Survey_period)) %>%
+#  dplyr::select(year, Basin, SBI_new_oldnormals)  %>%
+#  reshape2::melt(id = c("Basin", "year")) %>%
+#  dplyr::mutate(value = round(value, digits = 0)) %>%
+#  dplyr::rename(SBI = value) %>%
+#  dplyr::mutate(Basin = gsub("([[:lower:]])([[:upper:]])", "\\1 \\2", Basin))
+
+#basins <- unique(SBI_plot$Basin)
+
+# create bar plots of SBI for a particular sampling dateusing the historic SBI 
+#plots <- lapply(unique(SBI_plot$Basin), plot_SBI, SBI_plot)
+
+# save as PDF
+#glist <- lapply(plots, ggplotGrob) # workaround for blank first page
+#ggsave(paste0("G:/Snow/Statistics/SBI_tables/Comparison_byyear_", survey_period_i, "-", get_year, ".pdf"), marrangeGrob(grobs = glist, nrow=2, ncol=2, top = #NULL), width = 8.5, height = 11, units = c("in"))
+
+## Plot new vs old SBI
+#SBI_plot_vs <- SBI_all %>%
+#  #mutate(Survey_period <- as.Date(SBI_all$Survey_period, format = "%d-%m-%Y")) %>%
+#  mutate(year = year(Survey_period)) %>%
+#  select(year, Basin, SBI_new_oldnormals, mean_PercentNormal_SBIprev)  %>%
+#  #melt(id = c("Basin", "year")) %>%
+#  mutate(SBI_new = round(SBI_new_oldnormals, digits = 0), SBI_old = round(mean_PercentNormal_SBIprev, digits = 0))
+
+#plot_nvsold <- ggplot(data = SBI_plot_vs, aes(x = SBI_old, y = SBI_new, colour = Basin, size = year)) +
+#  geom_point() +
+#  ggtitle("New vs Old SBI - January 1st Sampling Date") +
+#  xlab("Old SBI (%) - Mean percent of normal") +
+#  ylab("New SBI (%) - Mean SBI/Mean Normal") +
+#  geom_abline(intercept = 0, slope = 1, color="black",
+#              linetype="dashed", size=1)+
+#  theme_bw()
+# save as pdf
+#ggsave("G:/Snow/Statistics/SBI_tables/Comparison_Jan1date.pdf",  plot = plot_nvsold)
+```
+
+\newpage
+\blandscape
+
+## Trends in SWE with elevation
+### Across the entire province
+Note that there are several stations that represent more than one basin; these sites are thus shown twice within the figure below.
+```{r elevation, echo=FALSE, message=FALSE, warning=FALSE,  fig.height = 12, fig.width = 20, fig.align = "center"}
+text_size = 20
+
+# Ensure that only unique stations exist- duplication for stations that exist within multiple basins
+# this might reduce the basin coverAGE? 
+
+#lm_eqn <- function (y,x) {
+#    m = lm(y ~ x)
+#    paste("italic(y)==", format(coef(m)[1], digits = 2), "+", 
+#        format(coef(m)[2], digits = 2), "%.%italic(x)*\",\"~~italic(r)^2==", 
+#        format(summary(m)$r.squared, digits = 3), sep = "")
+#  }
+
+# plot the SWE by elevation, colour by basin
+p1 <- ggplot(SBI_sites_i, aes(x = elevation, y = swe_mm)) +
+  geom_point(aes(colour = basin)) +
+  theme_bw() +
+  geom_smooth(method='lm', se = FALSE) +
+  geom_text(x = 500, y = 1300, label = lm_eqn(y = SBI_sites_i$swe_mm, x =  SBI_sites_i$elevation), parse = TRUE) +
+  ylab("SWE (mm)") +
+  theme(legend.position="none") +
+  theme(text = element_text(size=text_size))
+
+# Remove NA values
+SBI_sites_normal <- SBI_sites_i %>%
+  dplyr::filter(!is.na(percent_normal_prev)) %>%
+  dplyr::filter(!is.infinite(percent_normal_prev))
+
+p2 <- ggplot(SBI_sites_normal, aes(x = elevation, y = percent_normal_prev)) +
+  geom_point(aes(colour = basin)) +
+  theme_bw() +
+  geom_hline(yintercept = 100) +
+  geom_smooth(method='lm', se = FALSE) +
+  ylab("Percent of Normal (%)") +
+  xlab("Elevation (m)") +
+  geom_text(x = 1100, y = 130, label = lm_eqn(y = SBI_sites_normal$percent_normal_prev, x =  SBI_sites_normal$elevation), parse = TRUE) +
+  theme(text = element_text(size=text_size))
+
+gridExtra::grid.arrange(p1, p2, ncol = 2)
+
+```
+
+
+```{r elevationbox, echo = FALSE, warning = FALSE, fig.height = 12, fig.width = 20, fig.align = "center"}
+# aggregate elevations into low, mid and high elevation bands
+sites_el <- SBI_sites_i %>%
+  dplyr::mutate(bands = ifelse(elevation < 1200, "low: < 1200 m",
+         ifelse(elevation <1700 & elevation > 1200, "mid: 1200 - 1700 m", "high: > 1700 m"))) %>%
+  dplyr::mutate(bands = factor(bands)) %>%
+  dplyr::arrange(elevation) 
+
+# Plot by percent of normal
+box_norm <- ggplot(sites_el, aes(x = bands, y = percent_normal_prev)) +
+  geom_boxplot() +
+  theme_bw() + 
+  scale_x_discrete(limits=c("low: < 1200 m", "mid: 1200 - 1700 m", "high: > 1700 m")) +
+  geom_hline(yintercept = 100) +
+  ylab("Percent of Normal (%)") +
+  xlab("") + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0)) +
+  theme(text = element_text(size=text_size))
+
+# Plot by SWE
+box_SWE <- ggplot(sites_el, aes(x = bands, y = swe_mm)) +
+  geom_boxplot() +
+  theme_bw() + 
+  scale_x_discrete(limits=c("low: < 1200 m", "mid: 1200 - 1700 m", "high: > 1700 m")) +
+  ylab("SWE (mm)") +
+  xlab("") + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0)) +
+  theme(text = element_text(size=text_size))
+
+gridExtra::grid.arrange(box_norm, box_SWE, ncol = 2)
+
+```
+\newpage
+### Trends in SWE within specific basins
+Graphs show the SWE by elevation according to basin. The percent of mean (50th percentile calculated across the entire record), and the percent of normal (1981-2010 mean) is also shown by elevation for both manual and ASWE sites.
+
+```{r elevation_bybasin, echo=FALSE, message=FALSE, warning=FALSE, fig.width=11, fig.height = 6}
+# Make and assemble plots of elevation
+basins_elplot <- unique(SBI_sites_i$basin)[!unique(SBI_sites_i$basin) %in% remove_basins] # get basin names without spaces
+plots_elv <- lapply(basins_elplot, plot_elevation, sites_data = SBI_sites_i) # make plots using plot_elevation function
+plots_elv_flat <- rlang::flatten(plots_elv) # flatted list of plots within list of plots created by plot_elevation function
+
+plots_elv_grob <- lapply(plots_elv_flat, ggplotGrob) # to remove extra blank page
+
+# Arrange as 3x3 grid on a page
+gridExtra::marrangeGrob(grobs = plots_elv_grob, ncol=3, nrow = 1, top = NULL, as.table = TRUE, layout_matrix = matrix(1:6, 2, 3, TRUE))
+
+
+# also save PDF
+#glist <- lapply(basins_elplot, ggplotGrob) # workaround for blank first page
+#ggsave(paste0("G:/Snow/Statistics/SBI_tables/Elevation_ByBasin_", survey_period_i, "-", get_year, ".pdf"), marrangeGrob(grobs = basins_elplot, #nrow=2, ncol=1, top = NULL), width = 8.5, height = 11, units = c("in"))
+#glist <- lapply(plots_elv, ggplotGrob) # workaround for blank first page. Doesn't work?
+#marrangeGrob(grobs = plots_elv, nrow=1, ncol=1, top = NULL)
+#do.call("marrangeGrob",c(plots_elv, ncol=1, nrow=2, top = NULL))
+
+```
+
+
+\elandscape
+\newpage
+
+## Stations missing from analysis (compared to scheduled)
+To ensure that all of the stations that should be included within the 
+```{r missing stations, echo=FALSE, message=FALSE, warning=FALSE}
+# Show exempted ASWE sites
+print("ASWE sites omitted from analysis:")
+print(as.character(exceptions))
+
+# check for missing stations
+st <- SBI_sites_i %>%
+  dplyr::filter(station_type == "manual") %>%
+  dplyr::filter(!is.na(swe_mm)) %>%
+  dplyr::arrange(station_id) %>%
+  dplyr::distinct()
+
+scheduled_i <- read.csv("G:/Snow/Statistics/Data/Manual Snow Survey Sampling Schedule 2020 FINAL.csv", stringsAsFactors = FALSE, check.names = FALSE) 
+
+#mss_2021 <- pdf_text("G:/Snow/MSS Schedules and Budget/MSS Sampling Schedule 2021.pdf")
+
+
+#library(rJava)      # Needed for tabulizer
+#library(tabulizer)  # Handy tool for PDF Scraping
+#library(tidyverse)  # Core data manipulation and visualization libraries
+#mss_2021 <- extract_tables(
+#    file   = "G:/Snow/MSS Schedules and Budget/MSS Sampling Schedule 2021.pdf", 
+#    method = "decide", 
+ #   output = "data.frame")
+
+# Pick out the sampling period that is current
+#col_nam <- paste0(format(as.Date(survey_date), "%b"), ".", ifelse(format(as.Date(survey_date), "%d") == "01", "1", "15"))
+col_nam <- format(survey_date, "%d-%b")
+
+scheduled <- scheduled_i %>%
+  dplyr::filter(UQ(as.symbol(col_nam)) == "S")
+
+scheduled_sites <- unique(scheduled$Code)
+missing_scevssbi <- scheduled_sites[!(scheduled_sites %in% unique(st$station_id))]
+print("Stations missing as compared to scheduled visits:")
+print(as.character(scheduled_sites[!(scheduled_sites %in% unique(st$station_id))]))
+missing_scheduled <- scheduled_sites[!(scheduled_sites %in% unique(st$station_id))]
+
+# missing as compared to mss report
+print("Stations missing as compared to mss report:")
+print(as.character(manual_data$station_id[!(manual_data$station_id %in% st$station_id)]))
+
+# Complete basins:
+# associate basins by the ID number
+#all_sites <- unique(c(snow_auto_stations()$LOCATION_ID, snow_manual_stations()$LOCATION_ID))
+all_sites <- as.character(unique(missing_scheduled))
+
+basins_all <- c("UpperFraserWest", "UpperFraserEast", "Nechako", "MiddleFraser", "LowerFraser", "NorthThompson",
+                    "SouthThompson", "UpperColumbia", "WestKootenay", "EastKootenay", "Okanagan", "Boundary", "Similkameen", "SouthCoast",
+                    "VancouverIsland", "CentralCoast", "Skagit", "Peace", "SkeenaNass", "Stikine", "Liard", "Northwest", "HaidaGwaii")
+sites_first <- data.frame(Basin = basins_all, Station_ID_missing = NaN)
+
+sites_first[sites_first$Basin == "UpperFraserWest",][2] <- paste(all_sites[(all_sites %in% c("1A12", "1A16", "1A23", "1A12P"))], collapse = "; ")
+
+sites_first[sites_first$Basin == "UpperFraserEast",][2] <- paste(all_sites[(all_sites %in% c("1A02P", "1A14P", "1A17P", "1A05", "1A11", "1A15", "1A10", "1A06A", "1A05P"))], collapse = "; ")
+
+sites_first[sites_first$Basin == "Nechako",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "B"& substring(all_sites, 1, 1) == "1"), collapse = "; ")
+sites_first[sites_first$Basin == "MiddleFraser",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "C" & substring(all_sites, 1, 1) == "1"), collapse = "; ")
+sites_first[sites_first$Basin == "LowerFraser",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "D" & substring(all_sites, 1, 1) == "1"), collapse = "; ")
+sites_first[sites_first$Basin == "NorthThompson",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "E" & substring(all_sites, 1, 1) == "1"), collapse = "; ")
+sites_first[sites_first$Basin == "SouthThompson",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "F" & substring(all_sites, 1, 1) == "1"), collapse = "; ")
+sites_first[sites_first$Basin == "UpperColumbia",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "A" & substring(all_sites, 1, 1) == "2"), collapse = "; ")
+sites_first[sites_first$Basin == "WestKootenay",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) %in% c("D","B") & substring(all_sites, 1, 1) == "2"), collapse = "; ")
+sites_first[sites_first$Basin == "EastKootenay",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "C" & substring(all_sites, 1, 1) == "2"), collapse = "; ")
+sites_first[sites_first$Basin == "Okanagan",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "F" & substring(all_sites, 1, 1) == "2"), collapse = "; ")
+sites_first[sites_first$Basin == "Boundary",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "E" & substring(all_sites, 1, 1) == "2"), collapse = "; ")
+sites_first[sites_first$Basin == "Similkameen",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "G" & substring(all_sites, 1, 1) == "2"), collapse = "; ")
+sites_first[sites_first$Basin == "SouthCoast",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "A" & substring(all_sites, 1, 1) == "3"), collapse = "; ")
+sites_first[sites_first$Basin == "VancouverIsland",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "B" & substring(all_sites, 1, 1) == "3"), collapse = "; ")
+sites_first[sites_first$Basin == "CentralCoast",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "C" & substring(all_sites, 1, 1) == "3"), collapse = "; ")
+sites_first[sites_first$Basin == "Skagit",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "D" & substring(all_sites, 1, 1) == "3"), collapse = "; ")
+sites_first[sites_first$Basin == "Peace",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "A" & substring(all_sites, 1, 1) == "4"), collapse = "; ")
+sites_first[sites_first$Basin == "SkeenaNass",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "B" & substring(all_sites, 1, 1) == "4"), collapse = "; ")
+sites_first[sites_first$Basin == "Liard",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "C" & substring(all_sites, 1, 1) == "4"), collapse = "; ")
+sites_first[sites_first$Basin == "Stikine",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "D" & substring(all_sites, 1, 1) == "4"), collapse = "; ")
+sites_first[sites_first$Basin == "Northwest",][2] <- paste(subset(all_sites, substring(all_sites, 2, 2) == "E" & substring(all_sites, 1, 1) == "4"), collapse = "; ")
+sites_first[sites_first$Basin == "HaidaGwaii",][2] <- paste(NA, collapse = "; ")
+
+sites_first %>% 
+  dplyr::rename("Missing Station ID" = "Station_ID_missing") %>%
+  knitr::kable(format = "latex", booktabs = T, align = 'c') %>%
+  kable_styling(latex_options = "striped") 
+
+```

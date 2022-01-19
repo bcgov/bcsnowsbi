@@ -1,0 +1,897 @@
+---
+title: "Daily SWE and SBI Values"
+output:
+  html_document: 
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE, echo = FALSE, warning = FALSE}
+# This is meant to be an automated report that shows the SBI for the basins on a map, and then the average SWE plots and table of sites by region.
+# Automatically output as a html file. Will hopefully be replaced with a snow dashboard that is interactive rather than static html file.
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, fig.height = 12, fig.width = 12, fig.align = "center")
+
+#rm(list = ls())
+
+# ===============================================================================
+# Packages
+# ===============================================================================
+# Packages and libraries loaded through script below
+library(bcsnowsbi)
+library(bcsnowstats)
+library(bcsnowdata)
+
+# Where the SBI values should be saved
+SBI_path <- "V:/Real-time_Data/ASP_daily_interactive/data/SBI"
+
+# ===============
+# Unique Functions
+# ===============
+
+# Function for creating table
+basin_table <- function(basin_1, data){
+ SBI_sites_2019 <- data %>%
+  dplyr::arrange(Basin) %>%
+  dplyr::filter((Basin == basin_1)) %>%
+  dplyr::select(-Survey_Period) %>%
+  dplyr::select(Basin, Station_ID, station_name, Date_UTC, 
+                Station_type, Elevation, 
+                SWE_mm, SWE_mean, Percent_mean, 
+                Q50, Percent_Q50, 
+                Normal_SWE_mean, Percent_normal_mean, 
+                Normal_Q50, Percent_normal_median,
+                SWENormal_prev, Percent_normal_prev, 
+                percentile, 
+                MIN, Date_min_UTC,
+                MAX, Date_max_UTC,
+                current_rank_min, current_rank_max, NumberofYears, 
+                Date_peak_mean, Peak_mean_SWE, daystopeak_mean,
+                Date_peak_median, Peak_median_SWE, daystopeak_median,
+                mean_day_SD, SWE_y_1, SWE_y_2) %>%
+   dplyr::mutate(Per_mean_peak = round(SWE_mm/Peak_mean_SWE*100, digits = 0)) %>%
+   dplyr::mutate(Per_median_peak = round(SWE_mm/Peak_median_SWE*100, digits = 0)) %>%
+   dplyr::mutate(min_date = paste0(round(MIN, digits = 0), " (", year(Date_min_UTC), ")")) %>%
+   dplyr::mutate(max_date = paste0(round(MAX, digits = 0), " (", year(Date_max_UTC), ")")) %>%
+   dplyr::mutate(Date_peak_mean_dtp = paste0(Date_peak_mean, " (", daystopeak_mean, " days)")) %>%
+   dplyr::mutate(Date_peak_median_dtp = paste0(Date_peak_median, " (", daystopeak_median, " days)")) %>%
+   dplyr::mutate(Per_mean_peak_meanpeak = paste0(Per_mean_peak, "% (Peak = ", round(Peak_mean_SWE, digits = 0), " mm)")) %>%
+   dplyr::mutate(Per_mean_peak_medianpeak = paste0(Per_median_peak, "% (Peak = ", round(Peak_median_SWE, digits = 0), " mm)")) %>%
+   dplyr::select(-Date_peak_mean, -daystopeak_mean, -Date_peak_median, -daystopeak_median, 
+                 -Per_mean_peak, -Peak_mean_SWE,-Per_median_peak,-Peak_median_SWE) %>%
+   dplyr::rename('Station ID' = Station_ID,
+                'Station Name' = station_name, "Elevation (m)" = Elevation, 
+                'Station Type' = Station_type, 
+                'POR Median SWE (mm)' = Q50, 
+                'Date of Survey' = Date_UTC, 
+                'Mean Daily SWE (mm)' = SWE_mm, 
+                'Mean Daily Snow Depth (cm)' = mean_day_SD, 
+                "POR Mean SWE (mm)" = SWE_mean,
+                "% Mean SWE (POR)" = Percent_mean,
+                "POR Median SWE (mm)" = Q50,
+                '% Median SWE (POR)' = Percent_Q50, 
+                'Percentile (POR)' = percentile, 
+                'POR SWE Minimum (mm; year)' = min_date, 
+                'Date of minimum' = Date_min_UTC,
+                'POR SWE Maximum (mm; year)' = max_date,
+                'Date of maximum' = Date_max_UTC,
+                "Length of Data Record (Years)" = NumberofYears,
+                'SWE Mean (1981-2010; mm)' = Normal_SWE_mean, 
+                '% Mean (1981-2010; %)' = Percent_normal_mean,
+                'SWE Mean Normal (1981-2010; mm)' = SWENormal_prev, 
+                '% Mean Normal (1981-2010; mm)' = Percent_normal_prev, 
+                'SWE Median (1981-2010; mm)' = Normal_Q50,
+                '% Median (1981-2010)' = Percent_normal_median,
+                'Current POR Rank (min)' = current_rank_min,
+                'Current POR Rank (max)' = current_rank_max,
+                'Date of WY Peak - Mean (days to peak)' = Date_peak_mean_dtp,
+                '% of WY Peak - Mean (mean WY peak in mm SWE)' = Per_mean_peak_meanpeak,
+                'Date of WY Peak - Median (days to peak)' = Date_peak_median_dtp,
+                '% of WY Peak - Median (median WY peak in mm SWE)' = Per_mean_peak_medianpeak,
+                '2019 SWE (mm)' = SWE_y_1, '2018 SWE (mm)' = SWE_y_2) %>%
+   dplyr::mutate(`Station ID (repeat)` = `Station ID`) %>%
+   dplyr::select(-'MAX', -MIN, -'Date of minimum', -'Date of maximum',-'SWE Mean Normal (1981-2010; mm)', -'% Mean Normal (1981-2010; mm)') %>%
+   dplyr::mutate(Basin = gsub("([[:lower:]])([[:upper:]])", "\\1 \\2", Basin)) %>%
+   dplyr::arrange(Basin, `Station Type`, `Length of Data Record (Years)`) %>%
+   dplyr::select(-Basin, -`Date of Survey`)
+  
+ SBI_sites_2019 <- round_df(x = SBI_sites_2019, digits = 0)
+ 
+ # Reorder columns
+ SBI_sites_f <- SBI_sites_2019[,c("Station ID", "Station Name", "Station Type", "Elevation (m)", 
+                                     "Mean Daily SWE (mm)", 'Mean Daily Snow Depth (cm)', 
+                                     "POR Mean SWE (mm)", "% Mean SWE (POR)", 
+                                     "POR Median SWE (mm)", '% Median SWE (POR)', 
+                                     'Percentile (POR)',
+                                     'SWE Mean (1981-2010; mm)', '% Mean (1981-2010; %)', 
+                                     'SWE Median (1981-2010; mm)', '% Median (1981-2010)',
+                                     'Current POR Rank (min)', 'Current POR Rank (max)', "Length of Data Record (Years)", 
+                                     'POR SWE Minimum (mm; year)', 'POR SWE Maximum (mm; year)',
+                                     'Date of WY Peak - Mean (days to peak)', '% of WY Peak - Mean (mean WY peak in mm SWE)',
+                                     'Date of WY Peak - Median (days to peak)', '% of WY Peak - Median (median WY peak in mm SWE)',
+                                     '2019 SWE (mm)', '2018 SWE (mm)', "Station ID (repeat)")
+                                  ]
+
+ table <- SBI_sites_f %>% 
+  knitr::kable(escape = T, format = 'html',
+               align = "c", col.names = colnames(SBI_sites_f), row.names = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive", "bordered"), 
+                full_width = T, position = "center", fixed_thead = T) %>%
+  scroll_box(width = "150%", height = "80%", fixed_thead = T)  # add a scroll box
+  #column_spec(21:24, width = "5cm") 
+  #add_header_above(c("Station Metadata" = 4, "Current Data" = 2, "Current Statistics" = 5, 
+  #                   "Normals" = 4, "POR Rank" = 5, "Comparison to Peak WY SWE" = 4, "Historic SWE" = 2))
+}
+
+# function for returning SBI
+return_SBI <- function(basin_input){
+ sub <- SBI %>% 
+  dplyr::filter(Basin == basin_input) %>% 
+  dplyr::select("SBI_newnewnormals_mean")
+ round(sub[1,1], digits =0)
+}
+
+# ===============
+# Calculate the SBI values and the site statistics for the sites within the basin
+# ===============
+
+# Current SBI
+survey_period_i = format(Sys.Date(), "%m-%d")
+get_year = format(Sys.Date(), "%Y")
+exceptions_daily <- c()
+
+# =========================
+# See if the SBI files for today exist (also cretaed within the interactive maps)
+# =========================
+SBI <- tryCatch(read.csv(paste0(SBI_path, "/SBI_AllBasins_", get_year, "-", survey_period_i, ".csv"), 
+                         stringsAsFactors = FALSE),
+                error = function(e) NaN)
+
+sites <- tryCatch(read.csv(paste0(SBI_path, "/SBI_sites_AllBasins_", get_year, "-", survey_period_i, ".csv"),  
+                           stringsAsFactors = FALSE),
+                error = function(e) NaN)
+
+if (all(is.na(SBI))){ # if the daily SBI hasn't been read yet, calculate and read it! Will take forever
+  SBI <- SBI_byyear_function(get_year = get_year,
+                             survey_period_i = survey_period_i,
+                             save_csv = "Yes",
+                             all_basins = "Yes",
+                             exceptions = exceptions_daily,
+                             incorrect_sites = c(), incorrect_data = c(),
+                             path = SBI_path,
+                             use_cache = "Yes",
+                             append_cache = "Yes",
+                             directory_cache = "V:/Real-time_Data/ASP_daily_interactive/data/cache/")
+  
+  sites <- read.csv(paste0(SBI_path, "/SBI_sites_AllBasins_", get_year, "_", survey_period_i, ".csv"), stringsAsFactors = FALSE)
+  SBI <- read.csv(paste0(SBI_path, "/SBI_AllBasins_", get_year, "_", survey_period_i, ".csv"), stringsAsFactors = FALSE)
+}
+
+#SBI <- do.call("cbind.data.frame", SBI_2019[[1]])
+#sites <- do.call("cbind.data.frame", SBI_2019[[2]])
+
+# calculate the averae plot by basin
+#province <- Basin_averaged_SWE(basin_input = "Province", 
+#                               exceptions = exceptions_daily)
+
+#fraser <- Basin_averaged_SWE(basin_input = "Fraser", exceptions = exceptions_daily)
+
+# Basins
+#UFE <- Basin_averaged_SWE(basin_input = "UpperFraserEast", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#UFW <- Basin_averaged_SWE(basin_input = "UpperFraserWest", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#NW <- Basin_averaged_SWE(basin_input = "Northwest", exceptions = exceptions_daily, archive = archive, data_SWE_1 = data_SWE_1)
+#liard <- Basin_averaged_SWE(basin_input = "Liard", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#stikine <- Basin_averaged_SWE(basin_input = "Stikine", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year1)
+#skeena <- Basin_averaged_SWE(basin_input = "SkeenaNass", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#peace <- Basin_averaged_SWE(basin_input = "Peace", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#nechako <- Basin_averaged_SWE(basin_input = "Nechako", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#MF <- Basin_averaged_SWE(basin_input = "MiddleFraser", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#CC <- Basin_averaged_SWE(basin_input = "CentralCoast", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#NT <- Basin_averaged_SWE(basin_input = "NorthThompson", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#UC <- Basin_averaged_SWE(basin_input = "UpperColumbia", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#EK <- Basin_averaged_SWE(basin_input = "EastKootenay", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#WK <- Basin_averaged_SWE(basin_input = "WestKootenay", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#ST <- Basin_averaged_SWE(basin_input = "SouthThompson", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#boundary <- Basin_averaged_SWE(basin_input = "Boundary", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#okanagan <- Basin_averaged_SWE(basin_input = "Okanagan", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#sim <- Basin_averaged_SWE(basin_input = "Similkameen", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#LF <- Basin_averaged_SWE(basin_input = "LowerFraser", 
+#                          exceptions = exceptions_daily,
+ #                         survey_period = survey_period_i,
+ #                         get_year = get_year)
+#SC <- Basin_averaged_SWE(basin_input = "SouthCoast", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#VI <- Basin_averaged_SWE(basin_input = "VancouverIsland", 
+#                          exceptions = exceptions_daily,
+#                          survey_period = survey_period_i,
+#                          get_year = get_year)
+#skagit <- Basin_averaged_SWE(basin_input = "Skagit", exceptions = exceptions_daily, archive = archive, data_SWE_1 = data_SWE_1)
+
+# calculate the map
+map <- snow_map(SBI_input = paste0(SBI_path, "/SBI_AllBasins_", get_year, "-", survey_period_i, ".csv"),
+         stations_input = paste0(SBI_path, "/SBI_sites_AllBasins_", get_year, "-", survey_period_i, ".csv"), 
+         output = "G:/Snow/Statistics/SBI_tables/", 
+         normals = 'new')
+
+# Add in elevation to the site data
+ el_site <- data.frame(elevation(data_manual_final)) %>%
+   dplyr::select(Station_ID, Elevation, Name) %>%
+   dplyr::rename(station_name = Name) %>%
+   dplyr::arrange(Station_ID) 
+
+sites <- full_join(sites, el_site, by = c("Station_ID", "station_name"))
+
+```
+
+
+# Provincial SBI for `r survey_period_i`: `r return_SBI(basin_input = "Province")`%
+**Fraser SBI for `r Sys.Date()`: `r return_SBI(basin_input = "Fraser")`%**
+
+Map shows snow basin index (SBI) values by basin calculated for `r survey_period_i`. The SBI is calculated as the mean SWE for all sites within a basin divided by the mean normal for each site (where the normal is the mean SWE values for each site taken from 1981-2010). Data is provisional and should be used with caution. 
+
+**Snow Basin Index calculated by median values:**
+ Provincial = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Province"], digits = 0)`%; 
+ Fraser Basin = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Fraser"], digits = 0)`%
+
+```{r map, fig.height = 12, fig.width = 12, echo = FALSE, warning = FALSE}
+# Show map along with a provincial SWE average chart
+# SBI and site statistics are actually for yesterday 
+
+# Write the snow map using the function
+bc_logo <- image_read("data/BCID_V_rgb_pos.png") %>%
+  image_fill("none") %>%
+  as.raster()
+map
+grid::grid.raster(bc_logo, x=0.85, y = 0.65, width = 0.2, height = 0.2)
+
+# Plot average SWE map
+#plot <- plot_basin(data_plot = province, basin = "Province")
+#plot
+```
+
+
+# Tables of SWE Statistics by Region
+This section shows detailed trends in SWE by snow basin. This firstly includes tables of statistics for all sites used to calculate the SBI value for each snow basin on the survey date. 
+
+Secondly, trends in SWE with elevation for all of the sites within a particular basin is also investigated via plots of: 1) SWE vs. elevation, 2) Percent of Mean SWE (1981-2010) vs. site elevation, and 3) Percent of Mean SWE (over the period of record, or POR) vs. elevation.
+
+
+## Upper Fraser East SBI = `r return_SBI(basin_input = "UpperFraserEast")`%
+
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "UpperFraserEast"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE1, echo = FALSE, warning = FALSE}
+#ufe_SBI <- SBI %>% 
+#  filter(Basin == "UpperFraserEast") %>% 
+#  select("SBI_new_newnormals")
+#ufe_SBI <- round(ufe_SBI[1,1], digits =0)
+
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = UFE, basin = "UpperFraserEast")
+#plot
+
+#
+
+table <- basin_table(basin_1 = "UpperFraserEast", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWE1A, echo = FALSE, warning = FALSE}
+plots <- plot_elevation_daily(basin = "UpperFraserEast", data = sites)
+
+plots
+
+```
+
+
+## Upper Fraser West SBI = `r return_SBI(basin_input = "UpperFraserWest")`%
+
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "UpperFraserWest"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE2, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = UFW, basin = "UpperFraserWest")
+#plot
+
+#
+
+table <- basin_table(basin_1 = "UpperFraserWest", data = sites)
+table
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinUFW_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "UpperFraserWest", data = sites)
+
+```
+
+## Nechako SBI = `r return_SBI(basin_input = "Nechako")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Nechako"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE3, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = nechako, basin = "Nechako")
+#plot
+
+table <- basin_table(basin_1 = "Nechako", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWENechako_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "Nechako", data = sites)
+
+```
+
+## Middle Fraser SBI = `r return_SBI(basin_input = "MiddleFraser")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "MiddleFraser"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE4, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = MF, basin = "MiddleFraser")
+#plot
+
+table <- basin_table(basin_1 = "MiddleFraser", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinMF_b, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "MiddleFraser", data = sites)
+
+```
+
+## Lower Fraser SBI = `r return_SBI(basin_input = "LowerFraser")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "UpperFraserEast"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE5, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = LF, basin = "LowerFraser")
+#plot
+
+table <- basin_table(basin_1 = "LowerFraser", data = sites)
+table
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinLowerFraser_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "LowerFraser", data = sites)
+
+```
+
+## North Thompson SBI = `r return_SBI(basin_input = "NorthThompson")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "NorthThompson"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE6, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = NT, basin = "NorthThompson")
+#plot
+
+table <- basin_table(basin_1 = "NorthThompson", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWENT_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "NorthThompson", data = sites)
+
+```
+
+## South Thompson SBI = `r return_SBI(basin_input = "SouthThompson")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "SouthThompson"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE7, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = ST, basin = "SouthThompson")
+#plot
+
+table <- basin_table(basin_1 = "SouthThompson", data = sites)
+table
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinST_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "SouthThompson", data = sites)
+
+```
+
+## Upper Columbia SBI = `r return_SBI(basin_input = "UpperColumbia")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "UpperColumbia"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE8, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = UC, basin = "UpperColumbia")
+#plot
+
+table <- basin_table(basin_1 = "UpperColumbia", data = sites)
+table
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinUC_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "UpperColumbia", data = sites)
+
+```
+
+## West Kootenay SBI = `r return_SBI(basin_input = "WestKootenay")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "WestKootenay"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE9, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = WK, basin = "WestKootenay")
+#plot
+
+table <- basin_table(basin_1 = "West Kootenay", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinWK_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "WestKootenay", data = sites)
+
+```
+
+## East Kootenay SBI = `r return_SBI(basin_input = "EastKootenay")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "EastKootenay"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE10, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = EK, basin = "EastKootenay")
+#plot
+
+table <- basin_table(basin_1 = "EastKootenay", data = sites)
+table
+
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinEastKootenay_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "EastKootenay", data = sites)
+
+```
+
+## Okanagan SBI = `r return_SBI(basin_input = "Okanagan")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Okanagan"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE11, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = okanagan, basin = "Okanagan")
+#plot
+
+table <- basin_table(basin_1 = "Okanagan", data = sites)
+table
+
+```
+### Trends in SWE with Elevation 
+
+```{r basinSWEOK_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "Okanagan", data = sites)
+
+```
+
+## Boundary SBI = `r return_SBI(basin_input = "Boundary")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Boundary"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE12, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+# <- plot_basin(data_plot = boundary, basin = "Boundary")
+#plot
+
+table <- basin_table(basin_1 = "Boundary", data = sites)
+table
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWEBoundary_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "Boundary", data = sites)
+
+```
+
+## Similkameen SBI = `r return_SBI(basin_input = "Similkameen")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Similkameen"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE13, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = sim, basin = "Similkameen")
+#plot
+
+table <- basin_table(basin_1 = "Similkameen", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWESimilkameen_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "Similkameen", data = sites)
+
+```
+
+## South Coast SBI = `r return_SBI(basin_input = "SouthCoast")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "SouthCoast"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE14, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = SC, basin = "SouthCoast")
+#plot
+table <- basin_table(basin_1 = "SouthCoast", data = sites)
+table
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWESC_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "SouthCoast", data = sites)
+
+```
+
+## Vancouver Island SBI = `r return_SBI(basin_input = "VancouverIsland")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "VancouverIsland"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE15, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = VI, basin = "VancouverIsland")
+#plot
+
+table <- basin_table(basin_1 = "VancouverIsland", data = sites)
+table
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinVI_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "VancouverIsland", data = sites)
+
+```
+
+## Central Coast SBI = `r return_SBI(basin_input = "CentralCoast")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "CentralCoast"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE16, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = CC, basin = "CentralCoast")
+#plot
+
+table <- basin_table(basin_1 = "CentralCoast", data = sites)
+table
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWECC_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "CentralCoast", data = sites)
+
+```
+
+## Peace SBI = `r return_SBI(basin_input = "Peace")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Peace"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE17, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = peace, basin = "Peace")
+#plot
+
+table <- basin_table(basin_1 = "Peace", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWEPeace_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "Peace", data = sites)
+
+```
+
+## Skeena Nass SBI = `r return_SBI(basin_input = "SkeenaNass")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "SkeenaNass"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE18, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = skeena, basin = "SkeenaNass")
+#plot
+
+table <- basin_table(basin_1 = "SkeenaNass", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSkeenaNass_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "SkeenaNass", data = sites)
+
+```
+
+## Stikine SBI = `r return_SBI(basin_input = "Stikine")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Stikine"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE19, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = stikine, basin = "Stikine")
+#plot
+
+table <- basin_table(basin_1 = "Stikine", data = sites)
+table
+
+
+```
+
+### Trends in SWE with Elevation 
+
+```{r basinSWEStikine_B, echo = FALSE, warning = FALSE}
+plot_elevation_daily(basin = "Stikine", data = sites)
+
+```
+
+## Liard SBI = `r return_SBI(basin_input = "Liard")`%
+SBI Calculated by Median = `r round(SBI$SBI_newnewnormals_median[SBI$Basin == "Liard"], digits = 0)`%
+
+### Table of Statistics
+
+```{r basinSWE20, echo = FALSE, warning = FALSE}
+# plot the basin averaged SWE, table of sites within a basin.
+#plot <- plot_basin(data_plot = liard, basin = "Liard")
+#plot
+
+table <- basin_table(basin_1 = "Liard", data = sites)
+table
+
+#plot_elevation_daily(basin = "Liard", data = sites)
+#NOT WORKING
+
+```
+
+# SWE Trends with Elevation
+## Trends in SWE with changing elevation across the entire province
+Plots show 1) SWE as it varies by elevation (coloured by basin), and 2) the SWE percent of normal  (1981-2010 mean) as it varies by elevation (also coloured by basin). 
+
+```{r elevation, echo = FALSE, warning = FALSE}
+# Make sure the elevation is contained within the data for the SWE
+# Plot the SWE versus elevation, coloured by basin
+
+# Filter out na SWE values
+sites_el <- sites %>%
+  dplyr::filter(!is.na(SWE_mm))
+
+# plot the SWE by elevation, colour by basin
+#ggplot(sites_el, aes(x = Elevation, y = SWE_mm)) +
+#  geom_point(aes(colour = Basin)) +
+#  theme_bw() +
+#  geom_smooth(method='lm', se = FALSE) +
+#  geom_text(x = 1900, y = 1300, label = lm_eqn(y = sites_el$SWE_mm, x =  sites_el$Elevation), parse = TRUE) 
+  
+
+# =======================
+# Interactive plots
+fit <- lm(SWE_mm ~ Elevation, data = sites_el)
+
+ymin = as.numeric((min(sites_el$Elevation)-50)*fit$coefficients[2]+fit$coefficients[1])
+ymax = as.numeric((max(sites_el$Elevation)+50)*fit$coefficients[2]+fit$coefficients[1])
+
+xmin = as.numeric(min(sites_el$Elevation)-50)
+xmax = as.numeric(max(sites_el$Elevation)+50)
+
+plot_ly() %>%
+  add_trace(data = sites_el, 
+        x = ~Elevation, 
+        y = ~SWE_mm, 
+        type = 'scatter', mode = "markers",
+        color = ~Basin,
+        #symbol = ~Basin,
+        text = ~paste("Station ID: ", Station_ID, "; SWE =  ", round(SWE_mm, digits = 0), "Basin: ", Basin)) %>%
+  layout(showlegend = T) %>%
+  add_segments(x = xmin, xend = xmax, y = ymin, yend = ymax, showlegend = FALSE) %>%
+  layout(annotations = list(
+      list(x = 0 , y = 1, text = paste0(" y = ", round(fit[['coefficients']][2], digits = 2), "x + ", round(fit[['coefficients']][1], digits = 2)),
+           showarrow = F, xref='paper', yref='paper'))) %>%
+  layout(title = paste0("Trends in SWE with Elevation"),
+           xaxis = list(
+             title = "Elevation (masl)",
+             linecolor = toRGB("black"),
+             linewidth = 2),
+             yaxis = list(title = 'SWE (mm)',
+                          linecolor = toRGB("black"),
+                          linewidth = 2))
+
+#ggplot(sites_el, aes(x = Elevation, y = Percent_normal_mean)) +
+#  geom_point(aes(colour = Basin)) +
+#  theme_bw() +
+#  geom_hline(yintercept = 100) +
+#  geom_smooth(method='lm', se = FALSE) +
+#  ylab("Percent of Mean Normal (%)") +
+#  xlab("Elevation (m)") +
+#  geom_text(x = 1100, y = 130, label = lm_eqn(y = sites_el$Percent_normal_mean, x =  sites_el$Elevation), parse = TRUE)
+
+fit <- lm(Percent_normal_mean ~ Elevation, data = sites_el)
+
+ymin = as.numeric((min(sites_el$Elevation)-50)*fit$coefficients[2]+fit$coefficients[1])
+ymax = as.numeric((max(sites_el$Elevation)+50)*fit$coefficients[2]+fit$coefficients[1])
+
+xmin = as.numeric(min(sites_el$Elevation)-50)
+xmax = as.numeric(max(sites_el$Elevation)+50)
+
+plot_ly() %>%
+  add_trace(data = sites_el, 
+        x = ~Elevation, 
+        y = ~Percent_normal_mean, 
+        type = 'scatter', mode = "markers",
+        color = ~Basin,
+        #symbol = ~Basin,
+        text = ~paste("Station ID: ", Station_ID, "; % Normal (mean) =  ", round(Percent_normal_mean, digits = 0), "Basin: ", Basin)) %>%
+    layout(annotations = list(
+      list(x = 0 , y = 1, text = paste0(" y = ", round(fit[['coefficients']][2], digits = 2), "x + ", round(fit[['coefficients']][1], digits = 2)),
+           showarrow = F, xref='paper', yref='paper'))) %>%
+  add_segments(x = xmin, xend = xmax, y = ymin, yend = ymax, showlegend = FALSE) %>%
+  add_segments(x = min(sites_el$Elevation)-50, xend = max(sites_el$Elevation)+50, y = 100, yend = 100) %>%
+    layout(title = paste0("Trends in SWE with Elevation - Percent of Normal (Mean)"),
+           xaxis = list(
+             title = "Elevation (masl)",
+             linecolor = toRGB("black"),
+             linewidth = 2),
+             yaxis = list(title = 'Percent Normal (%)',
+                          linecolor = toRGB("black"),
+                          linewidth = 2))
+
+```
+
+
+## Comparison of low, mid and high elevation snowpacks across the province
+Boxplots show the mean (line) and 25-75th percentile (box) for 1) SWE measurements and 2) the percent of normal for sites at low (< 1200 m), mid (1200-1700 m) and high (>1700 m) elevation snowpacks (across the entire province; whiskers show 0-100th percentiles).
+
+```{r elevationbox, echo = FALSE, warning = FALSE}
+# aggregate elevations into low, mid and high elevation bands
+sites_el <- sites_el %>%
+  dplyr::mutate(bands = ifelse(Elevation < 1200, "low: < 1200 m",
+         ifelse(Elevation <1700 & Elevation > 1200, "mid: 1200 - 1700 m", "high: > 1700 m"))) %>%
+  dplyr::mutate(bands = factor(bands)) %>%
+  dplyr::arrange(Elevation) 
+
+# Plot by percent of normal
+box_norm <- ggplot(sites_el, aes(x = bands, y = Percent_normal_mean)) +
+  geom_boxplot() +
+  theme_bw() + 
+  scale_x_discrete(limits=c("low: < 1200 m", "mid: 1200 - 1700 m", "high: > 1700 m")) +
+  geom_hline(yintercept = 100) +
+  ylab("Percent of Mean Normal (%)") +
+  xlab("") + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+
+# Plot by SWE
+box_SWE <- ggplot(sites_el, aes(x = bands, y = SWE_mm)) +
+  geom_boxplot() +
+  theme_bw() + 
+  scale_x_discrete(limits=c("low: < 1200 m", "mid: 1200 - 1700 m", "high: > 1700 m")) +
+  ylab("SWE (mm)") +
+  xlab("") + 
+  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+
+gridExtra::grid.arrange(box_norm, box_SWE, ncol = 2)
+
+```

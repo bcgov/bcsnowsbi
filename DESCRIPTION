@@ -1,0 +1,26 @@
+Package: bcsnowsbi
+Title: Package for Calculating Snow Basin Indices (SBI) Values for British Columbia Subbasins
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Ashlee",
+           family = "Jollymore",
+           role = c("aut", "cre"),
+           email = "Ashlee.Jollymore@gov.bc.ca",
+           comment = c(ORCID = "0000-0002-2363-815X"))
+Maintainer: Ashlee Jollymore <Ashlee.Jollymore@gov.bc.ca>
+Description: Package that contains functions for calculating basin-averaged statistics for regions around British Columbia, Canada. Made and used by the BC River Forecast Centre in support of their Snow Bulletins.
+Depends: R (>= 3.1.0)
+License: Apache License (== 2.0) | file LICENSE
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1.9001
+Imports:
+    dplyr,
+    data.table,
+    purrr,
+    magrittr,
+    knitr,
+    lubridate,
+    bcsnowstats
+VignetteBuilder: knitr
