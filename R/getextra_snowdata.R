@@ -28,22 +28,21 @@ getextra_snowdata <- function(ASWE_sites_i, get_year, survey_period) {
   # Snow depth
   SD_1 <- bcsnowdata::get_aswe_databc(station_id = ASWE_sites_i,
                         get_year = get_year,
-                        parameter_id = "Snow_Depth",
-                        force = FALSE,
-                        ask = FALSE)
+                        parameter = "snow_depth",
+                        timestep = "daily")
 
   SD <- SD_1 %>%
     dplyr::mutate(date_dmy = as.Date(date_utc)) %>%
-    dplyr::group_by(date_dmy, station_id) %>%
+    dplyr::group_by(date_dmy, id) %>%
     dplyr::mutate(mean_day_sd = mean(value, na.rm = TRUE)) %>%
     dplyr::filter(date_dmy %in% paste0(get_year, "-", survey_period)) %>%
     dplyr::distinct(mean_day_sd, .keep_all = TRUE) %>%
     dplyr::ungroup() %>%
-    dplyr::select(station_id, date_dmy, mean_day_sd)
+    dplyr::select(id, date_dmy, mean_day_sd)
 
   #if dataframe is empty, assign NaN
   if (dim(SD)[1] < 1) {
-    SD <- data.frame(station_id = ASWE_sites_i,
+    SD <- data.frame(id = ASWE_sites_i,
                      mean_day_sd = NaN)
   }
 
@@ -56,15 +55,15 @@ getextra_snowdata <- function(ASWE_sites_i, get_year, survey_period) {
     dplyr::mutate(date_dmy = as.Date(date_utc)) %>%
     dplyr::filter(as.numeric(lubridate::month(date_dmy)) == as.numeric(lubridate::month(paste0(get_year, "-", survey_period)))) %>%
     dplyr::filter(as.numeric(lubridate::day(date_dmy)) == as.numeric(lubridate::day(paste0(get_year, "-", survey_period)))) %>%
-    dplyr::group_by(date_dmy, station_id) %>%
+    dplyr::group_by(date_dmy, id) %>%
     dplyr::mutate(swe_y_2 = mean(value, na.rm = TRUE)) %>% #take the mean SWE by day
     dplyr::distinct(date_dmy, .keep_all = TRUE) %>%
     dplyr::ungroup() %>%
-    dplyr::select(station_id, swe_y_2)
+    dplyr::select(id, swe_y_2)
 
   #if dataframe is empty, assign NaN
   if (dim(year_n2)[1] < 1) {
-    year_n2 <- data.frame(station_id = ASWE_sites_i,
+    year_n2 <- data.frame(id = ASWE_sites_i,
                           swe_y_2 = NaN)
   }
 
@@ -76,20 +75,20 @@ getextra_snowdata <- function(ASWE_sites_i, get_year, survey_period) {
     dplyr::mutate(date_dmy = as.Date(date_utc)) %>%
     dplyr::filter(as.numeric(lubridate::month(date_dmy)) == as.numeric(lubridate::month(paste0(get_year, "-", survey_period)))) %>%
     dplyr::filter(as.numeric(lubridate::day(date_dmy)) == as.numeric(lubridate::day(paste0(get_year, "-", survey_period)))) %>%
-    dplyr::group_by(date_dmy, station_id) %>%
+    dplyr::group_by(date_dmy, id) %>%
     dplyr::mutate(swe_y_1 = mean(value, na.rm = TRUE)) %>% #take the mean SWE by day
     dplyr::distinct(date_dmy, .keep_all = TRUE) %>%
     dplyr::ungroup() %>%
-    dplyr::select(station_id, swe_y_1)
+    dplyr::select(id, swe_y_1)
 
   #if dataframe is empty, assign NaN
   if (dim(year_n1)[1] < 1) {
-    year_n1 <- data.frame(station_id = ASWE_sites_i,
+    year_n1 <- data.frame(id = ASWE_sites_i,
                           swe_y_1 = NaN)
   }
 
   # bind together within one data frame
-  bind_1 <- dplyr::full_join(SD, year_n1, by = "station_id")
-  d_out <- dplyr::full_join(bind_1, year_n2, by = "station_id")
+  bind_1 <- dplyr::full_join(SD, year_n1, by = "id")
+  d_out <- dplyr::full_join(bind_1, year_n2, by = "id")
   return(d_out)
 }
