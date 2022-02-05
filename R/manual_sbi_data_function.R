@@ -67,7 +67,7 @@ manual_sbi_data <- function(survey_period, manual_sites, get_year, normals_manua
 
   if (dim(data_manual)[2] > 2 && dim(data_manual)[1] >= 1) { #Arrange the statistics dataframe if the percentile function returns data
     data_manual_s <- data_manual %>%
-      dplyr::select(station_id,
+      dplyr::select(id,
                     snow_course_name,
                     date_utc,
                     survey_period,
@@ -105,17 +105,17 @@ manual_sbi_data <- function(survey_period, manual_sites, get_year, normals_manua
     normals_prev <- manual_normals_1981t2010 %>%
       dplyr::filter(STATIONID %in% manual_sites) %>% #filter by the manual stations
       dplyr::select(STATIONID, dplyr::contains(paste0(prev_norm_time, "_SWE"))) %>% # filter by SWE columns and date
-      dplyr::rename(swenormal_prev = paste0(prev_norm_time, "_SWE"), station_id = STATIONID)
+      dplyr::rename(swenormal_prev = paste0(prev_norm_time, "_SWE"), id = STATIONID)
 
     # append to dataframe; Calculate the percent of normal from previously calculated normals
-    data_manual_0 <- dplyr::full_join(data_manual_s, normals_prev, by = "station_id") %>%
+    data_manual_0 <- dplyr::full_join(data_manual_s, normals_prev, by = "id") %>%
       dplyr::mutate(station_type = "manual") %>%
       dplyr::mutate(percent_normal_prev = round(swe_mm / swenormal_prev * 100, digits = 2))
 
     ## Append the extra variables for the snow basin table: Elevation, snow depth, code, historic 2017 SWE, historic 2016 SWE,
     # Snow depth
     SD <- data_manual %>%
-      dplyr::select(station_id, snow_depth_cm) %>%
+      dplyr::select(id, snow_depth_cm) %>%
       dplyr::rename(mean_day_sd = snow_depth_cm)
 
     # append to the list
@@ -124,21 +124,17 @@ manual_sbi_data <- function(survey_period, manual_sites, get_year, normals_manua
     # Add the mean SWE from the previous 2 years
     year_n2 <- bcsnowdata::get_manual_swe(station_id = manual_sites,
                                           get_year = c(as.numeric(get_year) - 2),
-                                          survey_period = time_period,
-                                          force = FALSE,
-                                          ask = FALSE) %>%
+                                          survey_period = time_period) %>%
       dplyr::mutate(date_dmy = as.Date(date_utc)) %>%
       dplyr::rename(swe_y_2 = swe_mm) %>%
-      dplyr::select(station_id, swe_y_2)
+      dplyr::select(id, swe_y_2)
 
     # SWE from the previous year
     year_n1 <- bcsnowdata::get_manual_swe(station_id = manual_sites,
                                           get_year = c(as.numeric(get_year) - 1),
-                                          survey_period = time_period,
-                                          force = FALSE,
-                                          ask = FALSE) %>%
+                                          survey_period = time_period) %>%
       dplyr::rename(swe_y_1 = swe_mm) %>%
-      dplyr::select(station_id, swe_y_1)
+      dplyr::select(id, swe_y_1)
 
     #Compile the SWE from the previous two years together
     years_n12 <- dplyr::full_join(year_n1, year_n2)
@@ -149,12 +145,12 @@ manual_sbi_data <- function(survey_period, manual_sites, get_year, normals_manua
   } else {
     tem <- setNames(data.frame(matrix(ncol = length(colnames_data_manual), nrow = 1)), colnames_data_manual)
     data_manual_prev <- dplyr::bind_rows(tem, data_manual) %>%
-      dplyr::filter(!is.na(station_id)) %>%
+      dplyr::filter(!is.na(id)) %>%
       dplyr::mutate(station_type = "manual")
   }
 
   # if there is missing station data, add empty rows
-  missing <- tibble::tibble(station_id = manual_sites[!(manual_sites %in% unique(data_manual_prev$station_id))])
+  missing <- tibble::tibble(station_id = manual_sites[!(manual_sites %in% unique(data_manual_prev$id))])
   data_manual_1 <- dplyr::bind_rows(data_manual_prev, missing)
 
   return(data_manual_1)
