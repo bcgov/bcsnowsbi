@@ -43,7 +43,7 @@ aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames
 
    # Get only one value per day- the mean SWE and rename as the SWE_mm
    data_aswe_0 <- data_aswe %>%
-     dplyr::select(station_id, station_name, date_utc, mean_day, swe_mean, percent_mean, Q50, percent_Q50, normal_swe_mean, percent_normal_mean,
+     dplyr::select(id, date_utc, mean_day, swe_mean, percent_mean, Q50, percent_Q50, normal_swe_mean, percent_normal_mean,
                   normal_Q50, percent_normal_median,
                   min, date_min_utc,
                   max, date_max_utc, percentile,
@@ -56,7 +56,7 @@ aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames
      dplyr::rename(swe_mm = mean_day) %>%
      dplyr::ungroup() %>%
      #dplyr::select(-m_d) %>%
-     dplyr::distinct(station_id, swe_mm, .keep_all = TRUE)
+     dplyr::distinct(id, swe_mm, .keep_all = TRUE)
 
    # Append the normal for that station
    if (survey_period == "01-01") {
@@ -83,10 +83,10 @@ aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames
      normals_prev_ASWE <- normals_ASWE %>%
        dplyr::filter(STATIONID %in% ASWE_sites) %>% #filter by the ASWE stations
        dplyr::select(STATIONID, dplyr::contains(paste0(prev_norm_time, "_SWE"))) %>% # filter by SWE columns and date
-       dplyr::rename(swenormal_prev = paste0(prev_norm_time, "_SWE"), station_id = STATIONID)
+       dplyr::rename(swenormal_prev = paste0(prev_norm_time, "_SWE"), id = STATIONID)
 
      # append to dataframe
-     data_aswe_0 <- dplyr::full_join(data_aswe_0, normals_prev_ASWE, by = c("station_id")) %>%
+     data_aswe_0 <- dplyr::full_join(data_aswe_0, normals_prev_ASWE, by = c("id")) %>%
        dplyr::mutate(station_type = "ASWE")
    } else {
      data_aswe_0 <- data_aswe_0 %>%
