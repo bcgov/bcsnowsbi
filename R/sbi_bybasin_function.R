@@ -41,7 +41,7 @@ sbi_bybasin_function <- function(date_sbi,
                                 ask = FALSE,
                                 use_sbi_cache = FALSE) {
 
-  date_sbi <- as.Date(date_sbi)
+  date_sbi <- as.Date(date_sbi, format = "%d-%m-%Y")
 
   year_sbi <- bcsnowdata::wtr_yr(date_sbi)
 
@@ -129,7 +129,7 @@ sbi_bybasin_function <- function(date_sbi,
     basins_all <- unique(sites_file$Basin)
    }
 
-   #If you want to just associate the sites to a basin according to their ID
+   # If you want to just associate the sites to a basin according to their ID
    if (all_basins[1] %in% c("Yes", "yes", "YES", "all")) {
 
     # get all of the sites within the archive - only the active sites
