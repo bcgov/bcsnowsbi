@@ -117,8 +117,7 @@ get_SBI_data <- function(sites,
   }
 
   # If the survey date is not one of the regular survey periods, reassign the manual sites to be non ( calculating the SBI between regular samnling periods)
-  sur <- c("01-01", "02-01", "03-01", "04-01", "05-01", "05-15", "06-01", "06-15")
-  if (survey_period %in% sur) {
+  if (survey_period %in% c("01-01", "02-01", "03-01", "04-01", "05-01", "05-15", "06-01", "06-15")) {
     manual_sites_i <- manual_sites_i
   } else {
     manual_sites_i <- c()
@@ -180,7 +179,8 @@ get_SBI_data <- function(sites,
     # Get the manual data for the SBI calculation using the manual_sbidata() function
     data_manual_1 <- manual_sbi_data(survey_period, manual_sites, get_year,
                                     normals_manual, colnames_data_manual,
-                                    normal_max, normal_min) %>%
+                                    normal_max, normal_min,
+                                    force) %>%
       dplyr::mutate(date_utc = date_sbi) %>%
       dplyr::mutate(date_utc = as.Date(date_utc)) %>%
       unique()
@@ -265,7 +265,7 @@ get_SBI_data <- function(sites,
     # Get the sites that are present for the survey day within the cached data. Creates a list of sites without cached data
     ASWE_sites <- ASWE_sites_i[!(ASWE_sites_i %in% unique(data_aswe_cached$station_id))]
 
-   } else if (file.exists(fpath) | force == TRUE) { # if the user wants to overwrite data or if there is no cached data, get the data for all the sites
+   } else if (!file.exists(fpath) | force == TRUE) { # if the user wants to overwrite data or if there is no cached data, get the data for all the sites
     ASWE_sites <- ASWE_sites_i
     data_aswe_cached <- setNames(data.frame(matrix(ncol = length(colnames_data), nrow = 0)), colnames_data)
    }
@@ -275,7 +275,8 @@ get_SBI_data <- function(sites,
   if (length(ASWE_sites) > 0) { # if there are ASWE site, then get relevant data
 
     # Get ASWE data using function
-    data_aswe_1 <- aswe_sbidata(ASWE_sites = ASWE_sites, date_sbi,
+    data_aswe_1 <- aswe_sbidata(ASWE_sites = ASWE_sites,
+                                date_sbi,
                                 survey_period, get_year, colnames_data,
                                 normal_max, normal_min, force)
 
