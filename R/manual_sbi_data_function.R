@@ -21,6 +21,7 @@
 #' @param colnames_data_manual Column names of the manual data that you will eventually export
 #' @param normal_max Date (year) of max year for normal period
 #' @param normal_min Date (year) of min year for normal period
+#' @param force whether to force the recalculation of manual normals. Defaults to FALSE (no)
 #' @importFrom magrittr %>%
 #' @export
 #' @keywords internal
@@ -29,7 +30,8 @@
 manual_sbi_data <- function(survey_period, manual_sites, get_year, normals_manual, colnames_data_manual,
                             normal_max, normal_min,
                             incorrect_sites = NA,
-                            incorrect_data = NA) {
+                            incorrect_data = NA,
+                            force = FALSE) {
 
   # Convert the survey_period into the right format for manual stations to get the right normal
   if (survey_period == "01-01"){
@@ -63,7 +65,8 @@ manual_sbi_data <- function(survey_period, manual_sites, get_year, normals_manua
                                          normal_min,
                                          normal_max,
                                          incorrect_sites = incorrect_sites,
-                                         incorrect_data = incorrect_data)
+                                         incorrect_data = incorrect_data,
+                                         force)
 
   if (dim(data_manual)[2] > 2 && dim(data_manual)[1] >= 1) { #Arrange the statistics dataframe if the percentile function returns data
     data_manual_s <- data_manual %>%
