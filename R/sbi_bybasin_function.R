@@ -130,7 +130,7 @@ sbi_bybasin_function <- function(date_sbi,
    }
 
    # If you want to just associate the sites to a basin according to their ID
-   if (all_basins[1] %in% c("Yes", "yes", "YES", "all")) {
+   if (all_basins[1] %in% c("Yes", "yes", "YES", "all", "ALL", "All")) {
 
     # get all of the sites within the archive - only the active sites
     sites_first <- basin_sites(get_basin =  "all", exceptions = exceptions)
