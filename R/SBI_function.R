@@ -22,7 +22,7 @@
 #' @keywords internal
 #' @examples \dontrun{}
 
-SBI_function <- function(data, date_sbi = Sys.Date(), basins) {
+SBI_function <- function(data, date_sbi = Sys.Date(), basins = unique(site_basin_name()$basin)) {
 
   #browser()
   #get the survey period for using with data
