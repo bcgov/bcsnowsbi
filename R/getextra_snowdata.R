@@ -46,12 +46,13 @@ getextra_snowdata <- function(ASWE_sites_i, get_year, survey_period) {
                      mean_day_sd = NaN)
   }
 
+  prev_2y <- as.numeric(get_year) - 2
+
   # Add the mean SWE from the previous 2 years
   year_n2 <- bcsnowdata::get_aswe_databc(station_id = ASWE_sites_i,
-                             get_year = c(as.numeric(get_year) - 2),
-                             parameter_id = "SWE",
-                             force = FALSE,
-                             ask = FALSE) %>%
+                             get_year = as.character(prev_2y),
+                             parameter = "swe",
+                             timestep = "daily") %>%
     dplyr::mutate(date_dmy = as.Date(date_utc)) %>%
     dplyr::filter(as.numeric(lubridate::month(date_dmy)) == as.numeric(lubridate::month(paste0(get_year, "-", survey_period)))) %>%
     dplyr::filter(as.numeric(lubridate::day(date_dmy)) == as.numeric(lubridate::day(paste0(get_year, "-", survey_period)))) %>%
@@ -69,9 +70,8 @@ getextra_snowdata <- function(ASWE_sites_i, get_year, survey_period) {
 
   year_n1 <- bcsnowdata::get_aswe_databc(station_id = ASWE_sites_i,
                              get_year = c(as.numeric(lubridate::year(paste0(get_year, "-", survey_period))) - 1),
-                             parameter_id = "SWE",
-                             force = FALSE,
-                             ask = FALSE) %>%
+                             parameter = "swe",
+                             timestep = "daily") %>%
     dplyr::mutate(date_dmy = as.Date(date_utc)) %>%
     dplyr::filter(as.numeric(lubridate::month(date_dmy)) == as.numeric(lubridate::month(paste0(get_year, "-", survey_period)))) %>%
     dplyr::filter(as.numeric(lubridate::day(date_dmy)) == as.numeric(lubridate::day(paste0(get_year, "-", survey_period)))) %>%
