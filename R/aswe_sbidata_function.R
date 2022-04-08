@@ -90,13 +90,13 @@ aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames
        dplyr::mutate(station_type = "ASWE")
    } else {
      data_aswe_0 <- data_aswe_0 %>%
-       dplyr::mutate(SWENormal_prev = NA) %>%
+       dplyr::mutate(swenormal_prev = NA) %>%
        dplyr::mutate(station_type = "ASWE")
    }
 
    # Calculate the percent of normal from previously calculated normals
    data_aswe_0 <- data_aswe_0 %>%
-     dplyr::mutate(percent_normal_prev = round(swe_mm / swenormal_prev * 100, digits = 2))
+     dplyr::mutate(percent_normal_prev = round(swe_mean / swenormal_prev * 100, digits = 2))
 
    # ===================
    # Calculate the snow depth and previous years SWE (previous two years)
