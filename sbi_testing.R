@@ -1,5 +1,5 @@
 # SBI testing
-
+rm(list = ls())
 library(bcsnowdata)
 library(bcsnowstats)
 library(bcsnowsbi)
