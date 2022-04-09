@@ -108,15 +108,17 @@ aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames
    # Tried lapply loop with this function rather than calling a large number of stations. Data loss within the get_aswe_databc() function!! Can't trust it!
 
    # test lapply function
-   lapply_solution <- lapply(ASWE_sites, getextra_snowdata,
-                             get_year, survey_period)
+   #lapply_solution <- lapply(ASWE_sites, getextra_snowdata,
+  #                           get_year, survey_period)
 
    # unwrap the created list with previous years stats
-   stats_prev_unlisted <- do.call("rbind.data.frame", lapply_solution) %>%
-     dplyr::arrange(station_id)
+   #stats_prev_unlisted <- do.call("rbind.data.frame", lapply_solution) %>%
+  #   dplyr::arrange(station_id)
+
+   stats_prev_unlisted <- getextra_snowdata(ASWE_sites_i = ASWE_sites, get_year, survey_period)
 
    # Join to dataframe - snow data you already have
-   data_aswe_prev <- dplyr::full_join(data_aswe_0, stats_prev_unlisted, by = "station_id")
+   data_aswe_prev <- dplyr::full_join(data_aswe_0, stats_prev_unlisted)
 
  } else { # create en empty row if there is no data retrieved
 
