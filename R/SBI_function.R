@@ -12,7 +12,6 @@
 # =====================================
 
 #' Function for calculating the SBI once the data is collected for individual sites (output from get_SBI_data() function)
-#'
 #' @param data dataframe of sites that you are looking to calculate the SBI for
 #' @param date_sbi Date you are calculating the SBI for. Defaults to current
 #' @param basins Basins that you want to calculate SBI for
@@ -38,9 +37,9 @@ SBI_function <- function(data, date_sbi = Sys.Date(), basins = unique(site_basin
   # Get the sites from the data in
   sites_in <- data %>%
     dplyr::filter(basin %in% basins) %>%
-    dplyr::select(station_id)
+    dplyr::select(id)
 
-  sites <- sites_in$station_id
+  sites <- sites_in$id
 
   ## Partition by manual and ASWE sites
   # ASWE sites
@@ -90,7 +89,7 @@ SBI_function <- function(data, date_sbi = Sys.Date(), basins = unique(site_basin
 
     #Identify the sites used to calculate the SBI_new_oldnormals
     sites_SBI_previous <- SBI_previous_prelim %>%
-      dplyr::select(station_id)
+      dplyr::select(id)
     sites_SBI_previous <- paste0(sites_SBI_previous) # identify sites that were used with SBI_new_prevnorm
 
     if (dim(SBI_previous)[1] < 1) {
@@ -117,7 +116,7 @@ SBI_function <- function(data, date_sbi = Sys.Date(), basins = unique(site_basin
 
     # Identify the stations used to calculate the SBI with the new normals
     sites_SBI_newnormals_mean <- SBI_newnormals_prelim %>%
-      dplyr::select(station_id)
+      dplyr::select(id)
     sites_SBI_newnormals_mean <- paste0(sites_SBI_newnormals_mean) # identify sites that are used within the newSBI_newnormals calculation
 
     if (dim(SBI_newnormals)[1] < 1) {
@@ -144,12 +143,12 @@ SBI_function <- function(data, date_sbi = Sys.Date(), basins = unique(site_basin
 
     # Identify the stations used to calculate the SBI with the new normals
     sites_SBI_newnormals_median <- SBI_newnormals_prelim_median %>%
-      dplyr::select(station_id)
+      dplyr::select(id)
     sites_SBI_newnormals_median <- paste0(sites_SBI_newnormals_median) # identify sites that are used within the newSBI_newnormals calculation
 
     # Join both SBI values together
-    SBI_all_1 <- dplyr::full_join(SBI_previous, SBI_newnormals, by = "basin")
-    SBI_all <- dplyr::full_join(SBI_all_1, SBI_newnormals_median, by = "basin")
+    SBI_all_1 <- dplyr::full_join(SBI_previous, SBI_newnormals)
+    SBI_all <- dplyr::full_join(SBI_all_1, SBI_newnormals_median)
 
     if (dim(SBI_all)[1] < 1) { # if there is no data, replace with NaN
       SBI_all[1, ] <- NaN
@@ -171,9 +170,9 @@ SBI_function <- function(data, date_sbi = Sys.Date(), basins = unique(site_basin
 
     all_stat_1 <- all_stat_SBI %>%
       dplyr::mutate(n_sites = length(all_1$swe_mm)) %>%
-      dplyr::mutate(sites_with_data = list(as.matrix(unique(all_1$station_id)))) %>%
+      dplyr::mutate(sites_with_data = list(as.matrix(unique(all_1$id)))) %>%
       dplyr::mutate(sites_with_data = as.character(sites_with_data)) %>%
-      dplyr::mutate(InitialSitesused = as.character(list(as.matrix(unique(all$station_id))))) %>%
+      dplyr::mutate(InitialSitesused = as.character(list(as.matrix(unique(all$id))))) %>%
       dplyr::mutate(Sitesused_SBInew_oldnormals = ifelse(length(sites_SBI_previous) > 0,
                                                          as.character(list(as.matrix(sites_SBI_previous))),
                                                          "No sites with old normals")) %>%
