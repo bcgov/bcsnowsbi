@@ -47,7 +47,7 @@ get_SBI_data <- function(sites,
   # Read in the previously calculated normal values for each site - manual
 
 
-  df <- list() #empty dataframe
+  #df <- list() #empty dataframe
 
   # Get the survey period for using with data
   date_sbi <- as.Date(date_sbi, format = "%d-%m-%Y")
@@ -82,7 +82,7 @@ get_SBI_data <- function(sites,
     }
 
   # Column names of final dataframe
-  colnames_data_manual <- c("station_id", "station_name", "date_utc", "survey_period", "swe_mm", "swe_mean",
+  colnames_data_manual <- c("id", "station_name", "date_utc", "survey_period", "swe_mm", "swe_mean",
                             "Q50", "normal_swe_mean", "date_min_utc", "date_max_utc",
                             "normal_Q50", "percent_Q50", "percent_normal_mean", "percent_normal_median",
                             "min", "max",
@@ -91,7 +91,7 @@ get_SBI_data <- function(sites,
                             "swenormal_prev", "station_type", "percent_normal_prev", "mean_day_sd",
                             "swe_y_1", "swe_y_2", "current_rank_min", "current_rank_max")
 
-  colnames_data <- c("station_id", "station_name",  "date_utc", "swe_mm","swe_mean", "percent_mean",
+  colnames_data <- c("id", "station_name",  "date_utc", "swe_mm","swe_mean", "percent_mean",
                      "Q50","percent_Q50" ,"normal_swe_mean","percent_normal_mean", "normal_Q50", "percent_normal_median",
                      "min","date_min_utc", "max", "date_max_utc", "percentile",
                      "current_rank_min","current_rank_max",
@@ -334,7 +334,7 @@ get_SBI_data <- function(sites,
     all <- ASWE_data %>%
       dplyr::mutate(date_max_utc = as.Date(date_max_utc), date_min_utc = as.Date(date_min_utc)) %>%
       # dplyr::mutate(Survey_period = paste0(survey_period.aswe, "-", get.year)) %>%
-      dplyr::filter(!is.na(station_id)) %>%
+      dplyr::filter(!is.na(id)) %>%
       dplyr::mutate(survey_period = survey_period)
 
   } else {
@@ -353,7 +353,7 @@ get_SBI_data <- function(sites,
 
     all <- dplyr::full_join(ASWE_t, manual_t) %>%
       # dplyr::mutate(Survey_period = paste0(survey_period.aswe, "-", get.year)) %>%
-      dplyr::filter(!is.na(station_id)) %>%
+      dplyr::filter(!is.na(id)) %>%
       dplyr::mutate(survey_period = survey_period)
   }
 
