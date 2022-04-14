@@ -146,8 +146,6 @@ sbi_bybasin_function <- function(date_sbi,
    #===================================
    # Calculate the SBI and site statistics for the basins you've defined
    #===================================
-
-   # df_year <- lapply(survey_period, get_SBI_year, get_year, basins = basins_all, sites = sites_first) # NOT WORkING!!!!
    # This will only work with one survey period
    SBI_basins_year <- get_SBI_year(date_sbi,
                                   sites = sites_first,
@@ -162,7 +160,7 @@ sbi_bybasin_function <- function(date_sbi,
     # filter(Station_ID %in% unique(c(snow_manual_current()$Number, snow_auto_current()$Station_ID))) # Filter by active sites %>% only works for 2019
     dplyr::filter(!is.na(swe_mm)) %>% # filter only the stations that have data
     dplyr::filter(!(basin %in% c("Province", "Fraser"))) %>%
-    dplyr::arrange(station_id, basin)
+    dplyr::arrange(id, basin)
 
    # If some of the data was retrieved from the cache, add it to the SBI data
    if (exists("check")) {
