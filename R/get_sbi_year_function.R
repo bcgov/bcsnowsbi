@@ -69,16 +69,17 @@ get_SBI_year <- function(date_sbi,
                            incorrect_data,
                            force,
                            ask) %>%
-    dplyr::arrange(station_id)
+    dplyr::arrange(id)
 
   # Assign the basin name to the sites using the site
-  SBI_data_basin <- dplyr::full_join(SBI_data, site_basinname(id = SBI_data$station_id)) %>%
+  SBI_data_basin <- dplyr::full_join(SBI_data, site_basinname(id = SBI_data$id)) %>%
     dplyr::filter(basin %in% unique(sites$basin)) # filter for only the basins that you are wanting to actually calculate an SBI value for
 
   # Calculate the SBI by basin, associating the statistical data for a site with the basin itself
   basins <- unique(SBI_data_basin$basin)
 
-  SBI <- lapply(basins, SBI_sites_function,
+  SBI <- lapply(basins,
+                SBI_sites_function,
                 date_sbi = date_sbi,
                 SBI_data = SBI_data_basin)
 
