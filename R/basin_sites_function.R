@@ -34,12 +34,12 @@ basin_sites <- function(get_basin = "All", exceptions = NULL) {
   basins_flip <- function(basin_in) {
 
     basin_select <- loc_sf %>%
-      dplyr::filter(!(station_id %in% exceptions)) %>% # filter out the exceptions that you don't want to include in the analysis
+      dplyr::filter(!(id %in% exceptions)) %>% # filter out the exceptions that you don't want to include in the analysis
        dplyr::filter(basin %in% basin_in)
 
-    stations_s <- paste(basin_select$station_id, collapse = ";")
+    stations_s <- paste(basin_select$id, collapse = ";")
 
-    data_out <- data.frame(basin = basin_in, stations = paste(basin_select$station_id, collapse = ";"))
+    data_out <- data.frame(basin = basin_in, stations = paste(basin_select$id, collapse = ";"))
   }
 
   # Run function over all basins and unfold the list you create and add the basins that aren't yet on the snow basin map. Also include the province
