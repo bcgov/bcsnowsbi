@@ -85,8 +85,11 @@ getextra_snowdata <- function(ASWE_sites_i, get_year, survey_period) {
                           swe_y_1 = NaN)
   }
 
+  date <- unique(SD$date_dmy)
+
   # bind together within one data frame
   bind_1 <- dplyr::full_join(SD, year_n1)
-  d_out <- dplyr::full_join(bind_1, year_n2)
+  d_out <- dplyr::full_join(bind_1, year_n2) %>%
+    dplyr::mutate(date_dmy = zoo::na.locf(date_dmy))
   return(d_out)
 }
