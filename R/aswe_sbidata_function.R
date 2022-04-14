@@ -27,7 +27,7 @@
 #' @keywords internal
 #' @examples \dontrun{}
 
-aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames_data, normal_max, normal_min, force) {
+aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames_data, normal_max, normal_min, force = FALSE) {
 
  # Get the statistics for today by site using the stats_aswe() function from the bcsnowstats:: function
  data_aswe <- bcsnowstats::stats_aswe(station_id = ASWE_sites,
@@ -35,7 +35,7 @@ aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames
                                      get_year = get_year,
                                      normal_min = normal_min,
                                      normal_max = normal_max,
-                                     force = force)
+                                     force = FALSE)
 
 
  # Filter the ASWE sites by the survey period - include the normal mean - s2
@@ -127,7 +127,7 @@ aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames
  }
 
  # Add in any missing stations
- missing_aswe <- tibble::tibble(station_id = ASWE_sites[!(ASWE_sites %in% unique(data_aswe_prev$station_id))])
+ missing_aswe <- tibble::tibble(id = ASWE_sites[!(ASWE_sites %in% unique(data_aswe_prev$id))])
  data_aswe_1 <- dplyr::bind_rows(data_aswe_prev, missing_aswe)
 
  # If the m_d column exists within the data, get rid of it.
