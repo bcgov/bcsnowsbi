@@ -36,10 +36,7 @@ sbi_bybasin_function <- function(date_sbi,
                                 exceptions = NA,
                                 incorrect_sites = NA, incorrect_data = NA,
                                 save_csv = c("No"),
-                                path,
-                                force = FALSE,
-                                ask = FALSE,
-                                use_sbi_cache = FALSE) {
+                                path) {
 
   date_sbi <- as.Date(date_sbi, format = "%d-%m-%Y")
 
@@ -47,66 +44,8 @@ sbi_bybasin_function <- function(date_sbi,
 
   current_wr <- bcsnowdata::wtr_yr(Sys.Date())
 
-  # Check to ensure that the ASWE archived data has been cached on the user's computer and is up to date
-  fname_sbi <- paste0("sbi_current")
-  dir_sbi <- data_dir()
-  fpath_sbi <- file.path(dir_sbi, fname_sbi)
-
-  # If the user wants to retrieve previously calculated SBI data AND if it exists within the cache AND the water year for the SBI date you want is the same as the current water year
-  if (file.exists(fpath_sbi) & use_sbi_cache & year_sbi == current_wr) {
-
-    # Check that the directory exists
-    check_write_to_data_dir(dir_sbi, ask)
-
-    # Get the cached SBI values
-    sbi_cache <- readRDS(fpath_sbi)
-
-    # Check to ensure that the data contains statistics with the right normal range. Filter for the range you are looking for
-    check <- sbi_cache %>%
-      dplyr::mutate(survey_period_date = as.Date(Survey_period, format = "%m-%d-%Y")) %>%
-      dplyr::filter(survey_period_date == date_sbi) %>%
-      dplyr::select(-survey_period_date)
-
-    # if you are looking for one basin,
-    if (!(all_basins %in%  c("Yes", "yes", "YES", "all"))) {
-      check <- check %>%
-        dplyr::filter(basin %in% all_basins)
-    }
-
-    # If you are looking for all of the basins, make sure that the archive contains all of the basins
-    check_basins <- check$basin
-
-    if (all_basins %in% c("Yes", "yes", "YES", "all")) {
-       input_basins <- paste0(basin_sites(get_basin =  "all", exceptions = exceptions)$basin)
-    } else {
-       input_basins <- all_basins
-    }
-
-    # Remove the basins that are present in the cache
-    missing_basins <- input_basins[!(input_basins %in% check_basins)]
-
-    # If there is no data for the survey period you want to retrieve, remove the 'check' variable
-    if (dim(check)[1] < 1) {
-      remove(check)
-    }
-  } else {
-    # Assign the missing basins to a length
-    missing_basins <- numeric()
-  }
-
-  # If either the check variable doesn't exist, or if the use_sbi_cache variable is FALSE OR if there are missing basins in the cache, calculate the SBI
-  if (!exists("check") | use_sbi_cache == FALSE | length(missing_basins) >= 1) {
-   #===================================
-   # Associate the basin with the sites within the basin that you will use to calculate the SBI value
-   #===================================
-
-   # Compensate for any sites that may have been retrieved within the cache by re-assigning all_basins varaible to those basins missing from the
-   if (length(missing_basins) >= 1) {
-     all_basins <- missing_basins
-   }
-
-   # If the user wants to specify sites with a csv file. Make sure that this is within the /data folder
-   if (all_basins[1] %in% "csv") {
+  # If the user wants to specify sites with a csv file. Make sure that this is within the /data folder
+  if (all_basins[1] %in% "csv") {
     # get the file with that shows what sites were associated with the specific basins
     sites_file <- read.csv("data/Sites_byBasin.csv", header = TRUE, na.strings = "") # data file with
 
@@ -149,10 +88,7 @@ sbi_bybasin_function <- function(date_sbi,
    # This will only work with one survey period
    SBI_basins_year <- get_SBI_year(date_sbi,
                                   sites = sites_first,
-                                  incorrect_sites, incorrect_data,
-                                  force,
-                                  ask
-                                  )
+                                  incorrect_sites, incorrect_data)
 
    # Unwind data frame
    SBI_year <- do.call("cbind.data.frame", SBI_basins_year$SBI)
@@ -161,14 +97,6 @@ sbi_bybasin_function <- function(date_sbi,
     dplyr::filter(!is.na(swe_mm)) %>% # filter only the stations that have data
     dplyr::filter(!(basin %in% c("Province", "Fraser"))) %>%
     dplyr::arrange(id, basin)
-
-   # If some of the data was retrieved from the cache, add it to the SBI data
-   if (exists("check")) {
-     SBI_year <- dplyr::full_join(check, SBI_year) %>%
-       dplyr::mutate(survey_period_date = as.Date(Survey_period, "%m-%d-%Y")) %>%
-       dplyr::filter(survey_period_date == date_sbi)%>% # make sure that only the survey period you want is added
-       dplyr::select(-survey_period_date)
-   }
 
    # If you want to save as a csv as well (defaults to FALSE)
    if (save_csv == "Yes") {
@@ -187,46 +115,6 @@ sbi_bybasin_function <- function(date_sbi,
      }
    } else { # don't save
    }
-
-
-   # If you are running this for all basins, archive a version (warm state file) of the SBI values. Overwrite the previous SBI values
-   # Also only archive if you are calculating SBI values for the current year
-   if (year_sbi == current_wr) {
-
-    # Does the cache exist? If not, create it
-    if (!file.exists(fpath_sbi)) {
-
-      # Check that the directory exists and create it if not
-      check_write_to_data_dir(dir_sbi, ask)
-
-      saveRDS(SBI_year, fpath_sbi)
-    } else {
-      # Get the cached data
-      sbi_cache <- readRDS(fpath_sbi)
-
-      # Get the basin and survey period for the data you just calculated
-      survey_basin_new <- paste(SBI_year$Survey_period, SBI_year$basin, sep = "_")
-
-      # Filter out any previously calculated SBI values
-      prev_SBI <- sbi_cache %>%
-        dplyr::mutate(survey_basin = paste(Survey_period, basin, sep = "_")) %>%
-        dplyr::filter(!(survey_basin %in% survey_basin_new)) %>%
-        dplyr::select(-survey_basin)
-
-      # Replace with the SBI values you just calculated
-      sbi_cache_final <- dplyr::full_join(prev_SBI, SBI_year) %>%
-        unique()
-
-      # Save updated cache
-      saveRDS(sbi_cache_final, fpath_sbi)
-    }
-  }
-
-  # If you retrieved data from the archive, send to out
-  } else {
-    SBI_year <- check
-    SBI_sites_year <- NA
-  }
 
   out <- list(SBI = SBI_year, SBI_sites = SBI_sites_year)
 }
