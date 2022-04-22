@@ -19,10 +19,6 @@ normals_ASWE
 
 \item{incorrect_data}{Data for the manual sites that are incorrect - this is the corrected data that the suer wants to replace with}
 
-\item{force}{Whether to force the download and recalculation of snow site statistics that have already been run and cached. Defaults to FALSE}
-
-\item{ask}{Whether to ask the user if it is ok to create a cached directory that holds cached data. Defaults to FALSE}
-
 \item{normals_ASWE}{previously calculated normals. defaults to bcsnowstats::ASWE_normals_1981t2010}
 
 \item{normals_manual}{Previously calculated normals. Defaults to bcsnowstats::manual_normals_1981t2010}
@@ -31,8 +27,6 @@ normals_ASWE
 Inputs are a list of sites, the date, any incorrect manual sites and the corrected values for these sites.
 }
 \examples{
-get_SBI_data()
+\dontrun{}
 }
-\keyword{Get}
-\keyword{SBI}
-\keyword{data}
+\keyword{internal}
