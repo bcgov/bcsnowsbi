@@ -15,9 +15,6 @@ basin_sites(get_basin = "All", exceptions = NULL)
 Inputs are which basin you want to return sites for. Defaults to "All" sites
 }
 \examples{
-basin_sites()
+\dontrun{}
 }
-\keyword{Basin}
-\keyword{basin}
-\keyword{by}
-\keyword{sites}
+\keyword{internal}
