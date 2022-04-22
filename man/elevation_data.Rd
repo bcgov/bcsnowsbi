@@ -10,6 +10,6 @@ elevation_data()
 Function for returning elevation by station
 }
 \examples{
-elevation_data()
+\dontrun{}
 }
-\keyword{elevation}
+\keyword{internal}
