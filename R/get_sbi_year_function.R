@@ -18,8 +18,6 @@
 #' @param sites Sites that you want to get data and use to calculate SBI data for
 #' @param incorrect_sites Manual site IDs that are incorrect within current survey date
 #' @param incorrect_data Data for the manual sites that are incorrect - this is the corrected data that the suer wants to replace with
-#' @param force Whether to force the download and recalculation of snow site statistics that have already been run and cached. Defaults to FALSE
-#' @param ask Whether to ask the user if it is ok to create a cached directory that holds cached data. Defaults to FALSE
 #' @importFrom magrittr %>%
 #' @export
 #' @keywords internal
@@ -27,33 +25,7 @@
 
 get_SBI_year <- function(date_sbi,
                          sites,
-                         incorrect_sites, incorrect_data,
-                         force = FALSE,
-                         ask = FALSE,...) {
-
-  # convert the survey_period into the right format for manual stations to get the right sites for that basin
-  #if (survey_period == "01-01"){
-  #  time_period <- "01-Jan"
-  #} else if (survey_period == "02-01"){
-  #  time_period <-  "01-Feb"
-  #} else if (survey_period == "03-01"){
-  #  time_period <-  "01-Mar"
-  #} else if (survey_period == "04-01"){
-  #  time_period <-  "01-Apr"
-  #} else if (survey_period == "05-01"){
-  #  time_period <-  "01-May"
-  #} else if (survey_period == "05-15"){
-  #  time_period <-  "15-May"
-  #} else if (survey_period == "06-01"){
-  #  time_period <-  "01-Jun"
-  #} else if (survey_period == "06-15"){
-  #  time_period <-  "15-Jun"
-  #} else {
-  #  time_period <- survey_period
-  #}
-
-  # get sbi date
-  #date_SBI <- format(as.Date(paste0(survey_period, "-", get_year), format = "%m-%d-%Y"), "%d-%m-%Y")
+                         incorrect_sites, incorrect_data) {
 
   # Calculate the statistics, including the snow basin index
   # First calculate the statistics for all sites across all basins (attempt to speed up the function)
@@ -66,9 +38,7 @@ get_SBI_year <- function(date_sbi,
   SBI_data <- get_SBI_data(sites = all_sites_3,
                            date_sbi,
                            incorrect_sites,
-                           incorrect_data,
-                           force,
-                           ask) %>%
+                           incorrect_data) %>%
     dplyr::arrange(id)
 
   # Assign the basin name to the sites using the site
@@ -76,16 +46,8 @@ get_SBI_year <- function(date_sbi,
     dplyr::filter(basin %in% unique(sites$basin)) # filter for only the basins that you are wanting to actually calculate an SBI value for
 
   # Calculate the SBI by basin, associating the statistical data for a site with the basin itself
-  basins <- unique(SBI_data_basin$basin)
+  SBI <- SBI_function(data = SBI_data_basin, date_sbi = date_sbi)
 
-  SBI <- lapply(basins,
-                SBI_sites_function,
-                date_sbi = date_sbi,
-                SBI_data = SBI_data_basin)
-
-  # Unwind the list you just created
-  test_SBI <- tibble::as_tibble(data.table::rbindlist(lapply(SBI, unwind_SBI), fill = TRUE))
-
-  out <- list(SBI = test_SBI, SBI_stations = SBI_data_basin)
+  out <- list(SBI = SBI, SBI_stations = SBI_data_basin)
   return(out)
 }

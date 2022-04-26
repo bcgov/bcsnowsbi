@@ -13,7 +13,8 @@ manual_sbi_data(
   normal_max,
   normal_min,
   incorrect_sites = NA,
-  incorrect_data = NA
+  incorrect_data = NA,
+  force = FALSE
 )
 }
 \arguments{
@@ -30,14 +31,13 @@ manual_sbi_data(
 \item{normal_max}{Date (year) of max year for normal period}
 
 \item{normal_min}{Date (year) of min year for normal period}
+
+\item{force}{whether to force the recalculation of manual normals. Defaults to FALSE (no)}
 }
 \description{
 Function calculates statistics for the manual sites that you specify for the specific year and survey period
 }
 \examples{
-manual_sbi_data()
+\dontrun{}
 }
-\keyword{Get}
-\keyword{SBI}
-\keyword{data}
-\keyword{manual}
+\keyword{internal}

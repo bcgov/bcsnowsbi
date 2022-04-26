@@ -12,7 +12,7 @@ aswe_sbidata(
   colnames_data,
   normal_max,
   normal_min,
-  force
+  force = FALSE
 )
 }
 \arguments{
@@ -36,9 +36,6 @@ aswe_sbidata(
 Inputs are a list of sites, the date, any incorrect manual sites and the corrected values for these sites.
 }
 \examples{
-aswe_sbidata()
+\dontrun{}
 }
-\keyword{ASWE}
-\keyword{Get}
-\keyword{SBI}
-\keyword{data}
+\keyword{internal}

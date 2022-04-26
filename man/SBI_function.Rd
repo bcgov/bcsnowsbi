@@ -4,20 +4,17 @@
 \alias{SBI_function}
 \title{Function for calculating the SBI once the data is collected for individual sites (output from get_SBI_data() function)}
 \usage{
-SBI_function(data, date_sbi, basins)
+SBI_function(data, date_sbi = Sys.Date())
 }
 \arguments{
 \item{data}{dataframe of sites that you are looking to calculate the SBI for}
 
-\item{date_sbi}{Date you are calculating the SBI for}
-
-\item{basins}{Basins that you want to calculate SBI for}
+\item{date_sbi}{Date you are calculating the SBI for. Defaults to current}
 }
 \description{
 Function for calculating the SBI once the data is collected for individual sites (output from get_SBI_data() function)
 }
 \examples{
-SBI_function()
+\dontrun{}
 }
-\keyword{SBI}
-\keyword{calculation}
+\keyword{internal}

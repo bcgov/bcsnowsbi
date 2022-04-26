@@ -17,10 +17,6 @@ getextra_snowdata(ASWE_sites_i, get_year, survey_period)
 Meant to be an internal function called within an lapply() loop by the aswe_sbidata() function. The lapply() approach is used in case data retrieve functions miss data when asked to retrieve a large amount of data
 }
 \examples{
-getextra_snowdata()
+\dontrun{}
 }
-\keyword{ASWE}
-\keyword{Get}
-\keyword{SBI}
-\keyword{data}
-\keyword{extra}
+\keyword{internal}

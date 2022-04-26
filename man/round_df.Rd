@@ -15,8 +15,6 @@ round_df(x, digits)
 function for rounding all numerics within a dataframe to a certain significant figure
 }
 \examples{
-round_df()
+\dontrun{}
 }
-\keyword{dataframe}
-\keyword{entries}
-\keyword{round}
+\keyword{internal}

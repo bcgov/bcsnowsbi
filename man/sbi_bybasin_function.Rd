@@ -12,10 +12,7 @@ sbi_bybasin_function(
   incorrect_sites = NA,
   incorrect_data = NA,
   save_csv = c("No"),
-  path,
-  force = FALSE,
-  ask = FALSE,
-  use_sbi_cache = FALSE
+  path
 )
 }
 \arguments{
