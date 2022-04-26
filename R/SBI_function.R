@@ -29,7 +29,7 @@ SBI_function <- function(data, date_sbi = Sys.Date()) {
 
   # group by basin
   data <- data %>%
-    group_by(basin)
+    dplyr::group_by(basin)
 
   # Get the sites from the data in
   sites_in <- data %>%
@@ -97,7 +97,7 @@ SBI_function <- function(data, date_sbi = Sys.Date()) {
         dplyr::distinct(SBI_new_oldnormals, .keep_all = FALSE)
 
     } else { # if there are no normals for the sites within a particular basin, assign the basin name with an NA value
-      SBI_previous <- tibble::as_tibble(unique(all_1$basins), NaN)
+      SBI_previous <- tibble::as_tibble(unique(all_1$basin), NaN)
       colnames(SBI_previous) = c("basin", "SBI_new_oldnormals")
     }
 
@@ -130,7 +130,7 @@ SBI_function <- function(data, date_sbi = Sys.Date()) {
         dplyr::distinct(SBI_newnewnormals_mean, .keep_all = FALSE)
 
     } else { # if there are no normals for the sites within a particular basin, assign the basin name with an NA value
-      SBI_newnormals <- tibble::as_tibble(unique(all_1$basins), NaN)
+      SBI_newnormals <- tibble::as_tibble(unique(all_1$basin), NaN)
       colnames(SBI_newnormals) <- c("basin", "SBI_newnewnormals_mean")
     }
 
@@ -161,7 +161,7 @@ SBI_function <- function(data, date_sbi = Sys.Date()) {
         dplyr::distinct(SBI_newnewnormals_median, .keep_all = FALSE)
 
     } else { # if there are no normals for the sites within a particular basin, assign the basin name with an NA value
-      SBI_newnormals_median <- tibble::as_tibble(unique(all_1$basins), NaN)
+      SBI_newnormals_median <- tibble::as_tibble(unique(all_1$basin), NaN)
       colnames(SBI_newnormals_median) <- c("basin", "SBI_newnewnormals_median")
     }
 
