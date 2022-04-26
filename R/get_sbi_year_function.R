@@ -27,30 +27,6 @@ get_SBI_year <- function(date_sbi,
                          sites,
                          incorrect_sites, incorrect_data) {
 
-  # convert the survey_period into the right format for manual stations to get the right sites for that basin
-  #if (survey_period == "01-01"){
-  #  time_period <- "01-Jan"
-  #} else if (survey_period == "02-01"){
-  #  time_period <-  "01-Feb"
-  #} else if (survey_period == "03-01"){
-  #  time_period <-  "01-Mar"
-  #} else if (survey_period == "04-01"){
-  #  time_period <-  "01-Apr"
-  #} else if (survey_period == "05-01"){
-  #  time_period <-  "01-May"
-  #} else if (survey_period == "05-15"){
-  #  time_period <-  "15-May"
-  #} else if (survey_period == "06-01"){
-  #  time_period <-  "01-Jun"
-  #} else if (survey_period == "06-15"){
-  #  time_period <-  "15-Jun"
-  #} else {
-  #  time_period <- survey_period
-  #}
-
-  # get sbi date
-  #date_SBI <- format(as.Date(paste0(survey_period, "-", get_year), format = "%m-%d-%Y"), "%d-%m-%Y")
-
   # Calculate the statistics, including the snow basin index
   # First calculate the statistics for all sites across all basins (attempt to speed up the function)
   all_sites <- paste(sites$stations, collapse = ";")
@@ -70,8 +46,6 @@ get_SBI_year <- function(date_sbi,
     dplyr::filter(basin %in% unique(sites$basin)) # filter for only the basins that you are wanting to actually calculate an SBI value for
 
   # Calculate the SBI by basin, associating the statistical data for a site with the basin itself
-  basins <- unique(SBI_data_basin$basin)
-
   SBI <- SBI_function(data = SBI_data_basin, date_sbi = date_sbi)
 
   out <- list(SBI = SBI, SBI_stations = SBI_data_basin)
