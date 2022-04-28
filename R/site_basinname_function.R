@@ -54,24 +54,40 @@ site_basinname <- function(id = "All") {
   loc <- rbind(manual_loc_j, aswe_loc_j) %>%
     dplyr::filter(LOCATION_ID %in% sites_i)
 
-  # Get the shape files for the snow basins
-  basin_shp <- bcdata::bcdc_query_geodata("9ec01cdb-7085-44fe-b059-9fe5aefb7497") %>%
-    dplyr::collect()
+  loc <- sf::st_as_sf(loc,
+               coords = c("LATITUDE", "LONGITUDE"),
+               crs = 4326,
+               agr = "constant") %>%
+    bcmaps::transform_bc_albers()
 
-  #url <- "https://services6.arcgis.com/ubm4tcTYICKBpist/arcgis/rest/services/Snow_Basins_Indices_View/FeatureServer/0"
-  #drought <- esri2sf::esri2sf(url, geomType = "esriGeometryPolygon") %>%
-  #  dplyr::rename(geometry = "geoms") %>%
-  #  as("Spatial") %>%
-  #  sp::spTransform(CRS("+proj=longlat +datum=WGS84")) %>%
-  #  sp::spTransform(CRS("+init=epsg:4326"))%>%
-   # dplyr::collect()
+  # Get the shape files for the snow basins - Data Catalogue
+  #basin_shp <- bcdata::bcdc_query_geodata("9ec01cdb-7085-44fe-b059-9fe5aefb7497") %>%
+  #  dplyr::collect()
+
+  url <- "https://services6.arcgis.com/ubm4tcTYICKBpist/arcgis/rest/services/Snow_Basins_Indices_View/FeatureServer/0"
+  basin_shp <- esri2sf::esri2sf(url, geomType = "esriGeometryPolygon") %>%
+    dplyr::rename(geometry = "geoms") %>%
+    as("Spatial") %>%
+    sp::spTransform(CRS("+proj=longlat +datum=WGS84")) %>%
+    sp::spTransform(CRS("+init=epsg:4326"))
+
+  basin_shp <- sf::st_as_sf(basin_shp, 4326) %>%
+    dplyr::mutate(
+      CENTROID = purrr::map(geometry, sf::st_centroid),
+      COORDS = purrr::map(CENTROID, sf::st_coordinates),
+      COORDS_X = purrr::map_dbl(COORDS, 1),
+      COORDS_Y = purrr::map_dbl(COORDS, 2)
+    )
+
+  basin_shp <- sf::st_make_valid(sf::st_as_sf(basin_shp, 4326)) %>%
+    sf::st_transform(4326)
+
+  loc <- sf::st_make_valid(sf::st_as_sf(loc, 4326)) %>%
+    sf::st_transform(4326)
 
   # Put the snow points in the same coordinate system as the snow basins and assign
-  loc_sf <- sf::st_as_sf(loc, coords = c("LATITUDE", "LONGITUDE"), crs = st_crs(basin_shp)) %>%
-    dplyr::mutate(
-      intersection = as.integer(sf::st_intersects(geometry, basin_shp)),
-      basin = ifelse(is.na(intersection), "", basin_shp$BASIN_NAME[intersection])
-    ) %>%
+  loc_sf <- sf::st_join(loc, basin_shp, left = FALSE) %>%
+    dplyr::rename(basin = basinName) %>%
     dplyr::arrange(basin) %>%
     dplyr::mutate(basin = ifelse(LOCATION_ID == "1A01P", "Upper Fraser East", basin)) %>%
     dplyr::mutate(basin = ifelse(LOCATION_ID == "1A01", "Upper Fraser East", basin)) %>%
