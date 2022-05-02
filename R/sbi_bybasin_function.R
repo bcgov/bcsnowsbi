@@ -31,7 +31,7 @@
 #' @examples
 #' sbi_bybasin_function()
 
-sbi_bybasin_function <- function(date_sbi,
+sbi_bybasin_function <- function(date_sbi = Sys.Date(),
                                 all_basins = "Yes",
                                 exceptions = NA,
                                 incorrect_sites = NA, incorrect_data = NA,
