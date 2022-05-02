@@ -62,11 +62,10 @@ manual_sbi_data <- function(survey_period, manual_sites, get_year, normals_manua
   data_manual <- bcsnowstats::stats_MSWE(station_id = manual_sites,
                                          survey_period = time_period,
                                          get_year = get_year,
-                                         normal_min,
-                                         normal_max,
+                                         normal_min = normal_min,
+                                         normal_max = normal_max,
                                          incorrect_sites = incorrect_sites,
-                                         incorrect_data = incorrect_data,
-                                         force)
+                                         incorrect_data = incorrect_data)
 
   if (dim(data_manual)[2] > 2 && dim(data_manual)[1] >= 1) { #Arrange the statistics dataframe if the percentile function returns data
     data_manual_s <- data_manual %>%
