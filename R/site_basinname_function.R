@@ -62,8 +62,8 @@ site_basinname <- function(id = "All") {
   basin_shp <- esri2sf::esri2sf(url, geomType = "esriGeometryPolygon") %>%
     dplyr::rename(geometry = "geoms") %>%
     as("Spatial") %>%
-    sp::spTransform(CRS("+proj=longlat +datum=WGS84")) %>%
-    sp::spTransform(CRS("+init=epsg:4326"))
+    sp::spTransform(sp::CRS("+proj=longlat +datum=WGS84")) %>%
+    sp::spTransform(sp::CRS("+init=epsg:4326"))
 
   basin_shp <- sf::st_make_valid(sf::st_as_sf(basin_shp, 4326)) %>%
     sf::st_transform(4326)
