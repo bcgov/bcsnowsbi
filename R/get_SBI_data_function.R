@@ -133,10 +133,11 @@ get_SBI_data <- function(sites,
   if (length(manual_sites) > 0) {
 
     # Get the manual data for the SBI calculation using the manual_sbidata() function
-    data_manual <- manual_sbi_data(survey_period, manual_sites, get_year,
-                                    normals_manual, colnames_data_manual,
-                                    normal_max, normal_min,
-                                    force) %>%
+    data_manual <- manual_sbi_data(survey_period = survey_period,
+                                   manual_sites = manual_sites, get_year = get_year,
+                                    normals_manual = normals_manual, colnames_data_manual = colnames_data_manual,
+                                    normal_max = normal_max, normal_min = normal_min,
+                                    force = force) %>%
       dplyr::mutate(date_utc = date_sbi) %>%
       dplyr::mutate(date_utc = as.Date(date_utc)) %>%
       unique()
