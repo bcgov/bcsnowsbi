@@ -85,15 +85,26 @@ sbi_bybasin_function <- function(date_sbi = Sys.Date(),
    #===================================
    # Calculate the SBI and site statistics for the basins you've defined
    #===================================
-   # This will only work with one survey period
-   SBI_basins_year <- get_SBI_year(date_sbi,
-                                  sites = sites_first,
-                                  incorrect_sites, incorrect_data)
+   all_sites <- paste(sites$stations, collapse = ";")
+   all_sites_1 <- unlist(strsplit(as.character(all_sites), ";"))
+   all_sites_2 <- gsub("\t", "", all_sites_1)
+   all_sites_3 <- unique(gsub(" ", "", all_sites_2))
 
-   # Unwind data frame
-   SBI_year <- do.call("cbind.data.frame", SBI_basins_year$SBI)
-   SBI_sites_year <- do.call("cbind.data.frame", SBI_basins_year$SBI_stations) %>%
-    # filter(Station_ID %in% unique(c(snow_manual_current()$Number, snow_auto_current()$Station_ID))) # Filter by active sites %>% only works for 2019
+   # Get all of the statistics data for all of the sites you are using across all basins
+   SBI_data <- get_SBI_data(sites = all_sites_3,
+                           date_sbi,
+                           incorrect_sites,
+                           incorrect_data) %>%
+     dplyr::arrange(id)
+
+   # Assign the basin name to the sites using the site
+   SBI_data_basin <- dplyr::full_join(SBI_data, site_basinname(id = SBI_data$id)) %>%
+     dplyr::filter(basin %in% unique(sites$basin)) # filter for only the basins that you are wanting to actually calculate an SBI value for
+
+   # Calculate the SBI by basin, associating the statistical data for a site with the basin itself
+   SBI_year <- SBI_function(data = SBI_data_basin, date_sbi = date_sbi)
+
+   SBI_sites_year <- SBI_data_basin %>%
     dplyr::filter(!is.na(swe_mm)) %>% # filter only the stations that have data
     dplyr::filter(!(basin %in% c("Province", "Fraser"))) %>%
     dplyr::arrange(id, basin)
