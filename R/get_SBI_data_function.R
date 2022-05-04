@@ -39,11 +39,6 @@ get_SBI_data <- function(sites,
   # ============================
   # Get and format normals
   # ============================
-  # Read in the previously calculated normal values for each site - ASWE
-  # Read in the previously calculated normal values for each site - manual
-
-
-  #df <- list() #empty dataframe
 
   # Get the survey period for using with data
   date_sbi <- as.Date(date_sbi, format = "%d-%m-%Y")
@@ -134,10 +129,13 @@ get_SBI_data <- function(sites,
 
     # Get the manual data for the SBI calculation using the manual_sbidata() function
     data_manual <- manual_sbi_data(survey_period = survey_period,
-                                   manual_sites = manual_sites, get_year = get_year,
-                                    normals_manual = normals_manual, colnames_data_manual = colnames_data_manual,
-                                    normal_max = normal_max, normal_min = normal_min,
-                                    force = force) %>%
+                                   manual_sites = manual_sites,
+                                   get_year = get_year,
+                                   normals_manual = normals_manual,
+                                   colnames_data_manual = colnames_data_manual,
+                                   normal_max = normal_max,
+                                   normal_min = normal_min,
+                                   force = force) %>%
       dplyr::mutate(date_utc = date_sbi) %>%
       dplyr::mutate(date_utc = as.Date(date_utc)) %>%
       unique()
@@ -155,9 +153,9 @@ get_SBI_data <- function(sites,
 
     # Get ASWE data using function
     data_aswe <- aswe_sbidata(ASWE_sites = ASWE_sites,
-                                date_sbi,
-                                survey_period, get_year, colnames_data,
-                                normal_max, normal_min, force)
+                                date_sbi = date_sbi,
+                                survey_period = survey_period, get_year = get_year, colnames_data = colnames_data,
+                                normal_max = normal_max, normal_min = normal_min, force = force)
 
   } else { # create an empty data frame if you didn't have any aswe sites to get data for (all within cache, etc)
     data_aswe <- setNames(data.frame(matrix(ncol = 33, nrow = 1)), colnames_data)
