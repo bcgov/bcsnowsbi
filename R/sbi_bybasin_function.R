@@ -22,14 +22,10 @@
 #' @param incorrect_data a string of numeric values that are the correct values for the incorrect sites identified in incorrect_sites. Defaults to NA.
 #' @param save_csv Whether the user wants to save a csv file of the final SBI values as well as the statistics from the sites used to calculate the SBI values. Can be 'Yes' or "No", but defaults to "No".
 #' @param path Path that you want to save the SBI result to
-#' @param force Whether you want to force the fresh download of the statistics for the sites used to calculate SBI values. Defaults to FALSE
-#' @param ask Whether to ask the user if they want to create a cached data directory. Defaults to FALSE
-#' @param use_sbi_cache Whether to try and retrieve SBI values from the cache. If the data exists, then the SBI values will NOT be recalculated. Defaults to FALSE
 #' @keywords SBI
 #' @importFrom magrittr %>%
 #' @export
-#' @examples
-#' sbi_bybasin_function()
+#' @examples \dontrun{}
 
 sbi_bybasin_function <- function(date_sbi = Sys.Date(),
                                 all_basins = "Yes",
@@ -85,21 +81,21 @@ sbi_bybasin_function <- function(date_sbi = Sys.Date(),
    #===================================
    # Calculate the SBI and site statistics for the basins you've defined
    #===================================
-   all_sites <- paste(sites$stations, collapse = ";")
+   all_sites <- paste(sites_first$stations, collapse = ";")
    all_sites_1 <- unlist(strsplit(as.character(all_sites), ";"))
    all_sites_2 <- gsub("\t", "", all_sites_1)
    all_sites_3 <- unique(gsub(" ", "", all_sites_2))
 
    # Get all of the statistics data for all of the sites you are using across all basins
    SBI_data <- get_SBI_data(sites = all_sites_3,
-                           date_sbi,
-                           incorrect_sites,
-                           incorrect_data) %>%
+                           date_sbi = date_sbi,
+                           incorrect_sites = incorrect_sites,
+                           incorrect_data = incorrect_data) %>%
      dplyr::arrange(id)
 
    # Assign the basin name to the sites using the site
    SBI_data_basin <- dplyr::full_join(SBI_data, site_basinname(id = SBI_data$id)) %>%
-     dplyr::filter(basin %in% unique(sites$basin)) # filter for only the basins that you are wanting to actually calculate an SBI value for
+     dplyr::filter(basin %in% unique(sites_first$basin)) # filter for only the basins that you are wanting to actually calculate an SBI value for
 
    # Calculate the SBI by basin, associating the statistical data for a site with the basin itself
    SBI_year <- SBI_function(data = SBI_data_basin, date_sbi = date_sbi)
