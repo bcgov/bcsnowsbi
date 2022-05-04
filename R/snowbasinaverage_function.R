@@ -14,7 +14,7 @@
 #' Function for returning the SBI for a specific subset of sites that you manually determine
 #'
 #' @param sites String of site IDs that you want to calculate SBI values for
-#' @param date_SBI date of the SBI you want to retrieve ("YYYY-mm-dd")
+#' @param date_sbi date of the SBI you want to retrieve ("YYYY-mm-dd")
 #' @param incorrect_sites Site ID's for manual sites with incorrect data. Defaults to NA.
 #' @param incorrect_data Corrected data for manual sites that have incorrect data. Defaults to NA.
 #' @param force Whether all of the data should be recalculated rather than retrieved from the statistics data cache. Defaults to FALSE or no.
@@ -22,8 +22,7 @@
 #' @keywords Get manual SBI data
 #' @importFrom magrittr %>%
 #' @export
-#' @examples
-#' snow_basin_average()
+#' @examples \dontrun{}
 
 snow_basin_average <- function(sites, date_sbi,
                                incorrect_sites = NA, incorrect_data = NA,
