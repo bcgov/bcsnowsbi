@@ -6,7 +6,7 @@
 Select a year, a survey period (can be all), and this function calculates the SBI and the sites statistics and saves both as two csv files.}
 \usage{
 sbi_bybasin_function(
-  date_sbi,
+  date_sbi = Sys.Date(),
   all_basins = "Yes",
   exceptions = NA,
   incorrect_sites = NA,
@@ -29,17 +29,11 @@ sbi_bybasin_function(
 \item{save_csv}{Whether the user wants to save a csv file of the final SBI values as well as the statistics from the sites used to calculate the SBI values. Can be 'Yes' or "No", but defaults to "No".}
 
 \item{path}{Path that you want to save the SBI result to}
-
-\item{force}{Whether you want to force the fresh download of the statistics for the sites used to calculate SBI values. Defaults to FALSE}
-
-\item{ask}{Whether to ask the user if they want to create a cached data directory. Defaults to FALSE}
-
-\item{use_sbi_cache}{Whether to try and retrieve SBI values from the cache. If the data exists, then the SBI values will NOT be recalculated. Defaults to FALSE}
 }
 \description{
 This function gives you the SBI for one, multiple, or all basins by water year for a specific day or survey period.
 }
 \examples{
-sbi_bybasin_function()
+\dontrun{}
 }
 \keyword{SBI}
