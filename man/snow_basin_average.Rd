@@ -17,6 +17,8 @@ snow_basin_average(
 \arguments{
 \item{sites}{String of site IDs that you want to calculate SBI values for}
 
+\item{date_sbi}{date of the SBI you want to retrieve ("YYYY-mm-dd")}
+
 \item{incorrect_sites}{Site ID's for manual sites with incorrect data. Defaults to NA.}
 
 \item{incorrect_data}{Corrected data for manual sites that have incorrect data. Defaults to NA.}
@@ -24,14 +26,12 @@ snow_basin_average(
 \item{force}{Whether all of the data should be recalculated rather than retrieved from the statistics data cache. Defaults to FALSE or no.}
 
 \item{ask}{Whether to ask the user to create a data cache directory. Defaults to FALSE or no.}
-
-\item{date_SBI}{date of the SBI you want to retrieve ("YYYY-mm-dd")}
 }
 \description{
 Function for returning the SBI for a specific subset of sites that you manually determine
 }
 \examples{
-snow_basin_average()
+\dontrun{}
 }
 \keyword{Get}
 \keyword{SBI}
