@@ -36,7 +36,7 @@ getextra_snowdata <- function(ASWE_sites_i, get_year, survey_period) {
     dplyr::filter(date_dmy %in% as.Date(paste0(get_year, "-", survey_period))) %>%
     dplyr::distinct(mean_day_sd, .keep_all = TRUE) %>%
     dplyr::ungroup() %>%
-    dplyr::select(id, date_dmy, mean_day_sd)
+    dplyr::select(id, mean_day_sd)
 
   #if dataframe is empty, assign NaN
   if (dim(SD)[1] < 1) {
@@ -89,7 +89,6 @@ getextra_snowdata <- function(ASWE_sites_i, get_year, survey_period) {
 
   # bind together within one data frame
   bind_1 <- dplyr::full_join(SD, year_n1)
-  d_out <- dplyr::full_join(bind_1, year_n2) %>%
-    dplyr::mutate(date_dmy = zoo::na.locf(date_dmy))
+  d_out <- dplyr::full_join(bind_1, year_n2)
   return(d_out)
 }
