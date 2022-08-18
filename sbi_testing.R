@@ -5,15 +5,13 @@ library(bcsnowstats)
 library(bcsnowsbi)
 
 
-SBI_2022 <- bcsnowsbi::sbi_bybasin_function(date_sbi = Sys.Date(),
+SBI_2022 <- bcsnowsbi::sbi_bybasin_function(date_sbi = as.Date("2022-04-01"),
                                  all_basins = "Yes", # What basin to analyze SBI values for. Can also be "Yes" to get all SBI values for all basins
                                  exceptions = c(), # No sites to remove from analysis
                                  incorrect_sites = c(), incorrect_data = c(), # No incorrect manual sites. Otherwise, can specify the site name and data that a manual site should be (in cases where it data was incorrectly entered).
                                  save_csv = "Yes", # Do you want to save
-                                 path = "C:/Users/AJOLLYMO/RProjects/SnowData_archive/SBI_cache", # Path where you want to save a csv version of the results
-                                 force = FALSE, # Force re-analysis of data rather than getting data from cache
-                                 use_sbi_cache = FALSE)
-
+                                 path = "G:/Snow/sbi_archive/")
+t <- SBI_2022[[1]]
 
 SBI_2022 <- sbi_bybasin_function(date_sbi = "01-04-2022",
                                  all_basins = "Yes", # What basin to analyze SBI values for. Can also be "Yes" to get all SBI values for all basins
@@ -65,7 +63,7 @@ dates <- c(as.Date("2021-12-01"), as.Date("2022-01-01"), as.Date("2022-02-01"), 
            as.Date("2022-05-01"), as.Date("2022-05-15"), as.Date("2022-06-01"), as.Date("2022-06-15"))
 
 
-lapply(dates[2],
+lapply(dates[2:length(dates)],
        sbi_bybasin_function,
        all_basins = "Yes",
        incorrect_sites = c(), incorrect_data = c(), # No incorrect manual sites. Otherwise, can specify the site name and data that a manual site should be (in cases where it data was incorrectly entered).
