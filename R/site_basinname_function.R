@@ -122,15 +122,8 @@ site_basinname <- function(id = "All") {
                                         "Quesnel", NA)) %>%
     dplyr::filter(!is.na(basin))
 
-  # Lower Thompson
-  extra_lt <- data.frame(id = sites_i,
-                              basin = ifelse(sites_i %in% c("1C32", "1C09A", "1C19", "1C25", "1C29", "1C29P", "1C01", "1C06",
-                                                            "1C42"),
-                                             "LowerThompson", NA)) %>%
-    dplyr::filter(!is.na(basin))
-
   # Bind all the extra basins together
-  basins_extra_all <- do.call("rbind", list(extra_basins_province, extra_basins_fc, extra_nicola, extra_fp, extra_lb, extra_quesnel, extra_lt)) %>%
+  basins_extra_all <- do.call("rbind", list(extra_basins_province, extra_basins_fc, extra_nicola, extra_fp, extra_lb, extra_quesnel)) %>%
     dplyr::rename(LOCATION_ID = id)
 
   # Add in the locations for the sites
@@ -140,7 +133,8 @@ site_basinname <- function(id = "All") {
 
 
   # bind to the sites identified by the snow basins
-  loc_sf_all <- dplyr::full_join(loc_sf, basins_extra_loc)
+  loc_sf_all <- dplyr::full_join(loc_sf, basins_extra_loc) %>%
+    unique()
 
   return(loc_sf_all)
 }
