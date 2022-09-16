@@ -35,34 +35,29 @@ This package contains functions that calculate the snow basin index (SBI) value 
 The package contains several functions for retrieving snow basin index values for a particlar basin within the province (details below).
 
 This package also depends on two snow-specific packages to function: 
+
 1. bcsnowdata() - retrieves raw data from both automated and manual snow survey sites. This package also contains functions to determine
 
-2. bcsnowstats() - This function calculates statistics for specific sites that are used within the SBI calculation (specifically, percentiles as well as normals for the period of interest). Note that the sbi functions within the bcsnowsbi() package will automatically assign the appropriate normal time period based on the water year of the survey period you are looking for SBI values for (more detail in Useage section of this document).
+2. bcsnowstats() - This function calculates statistics for specific sites that are used within the SBI calculation (specifically, percentiles as well as normals for the period of interest). Note that the sbi functions within the bcsnowsbi() package will automatically assign the appropriate normal time period based on the water year of the survey period you are looking for SBI values for (more detail in Usage section of this document).
 
 ### Installation
 bcsnowsbi() can be installed directly from github.
 
 
-
 ### Usage
 
-#### How SBI Values are Calculated for BS Basins
+#### How SBI Values are Calculated for British Columbia Basins
 
-Snow basin indices are calculated for subbasins across British Columbia during the snow accumulation and melt season. They are a means of determining how much snow is within a basin relative to normal conditions for that basin for that time of year.
-
-SBI values are calculated as:
+Snow basin indices (SBI) values are calculated for subbasins across British Columbia during the snow accumulation and melt season. They are a means of determining how much snow is within a basin relative to normal conditions for that basin for that time of year, a major determinant of flood risk in the lead up to the spring melt (freshet) season. SBI values are calculated as the mean snow water equivalent of all of the manual and automated snow measurements within a particular basin divided by the mean snow normal values for these same sites. Snow normals are calculated as the arithmetic mean of snow water equivalent values for a particular day across a defined 30-year period (more detail regarding how snow normal values are calculated can be found within bcsnowstats() package documentation).
 
 #### Ways of Returning SBI Values Using bcsnowsbi()
-
 
 There are several ways to return SBI values for a particular basin using bcsnowsbi().
 
 Firstly, SBI values can be calculated and returned using the sbi_bybasin_function(). This allows the user to return SBI values for one, several, or all basins within BC. 
 
-
-
-```{r sbi_bybasin_function}
-## Example of how to use the sbi_bybasin_function()
+```
+# Example of how to use the sbi_bybasin_function()
 # Retrieve SBI values for the Okanagan for Feb 1st, 2021
 # No sites that should be removed from analysis ("exceptions"), or incorrect manual sites
 
@@ -78,11 +73,9 @@ SBI_test <- sbi_bybasin_function(date_sbi = "01-04-2022",
 
 #### Additional Analyis Details 
 
-The bcsnowsbi() package uses the bcsnowstats() package in order to calculate statistics from raw data retrieved by bcsnowdata(). 
+bcsnowsbi() uses bcsnowstats() in order to calculate statistics from raw data retrieved by bcsnowdata(). 
 
 Most critically, bcsnowsbi() uses SWE normals calculated through bcsnowsbi(); these snow normals are values of mean SWE taken over a defined 30-year period for each calendar day (more detail about snow normal calculations is present within documentation for the bcsnowstats() package). This package will first define what this normal period should be depending on the  year of the date that the user wishes to calculate SBI values for. For example, if SBI values for January 1st, 2021 are calculated, a normal period of 1990-2020 will be automatically assigned (normals are then calculated through the bcsnowstats() function).
-
-
 
 ### Project Status
 
@@ -113,7 +106,7 @@ This package uses snow-related data present on the BC Data Catalogue. This inclu
 [![Creative Commons License](https://i.creativecommons.org/l/by/4.0/88x31.png)](http://creativecommons.org/licenses/by/4.0/)
 
 ```
-Copyright 2021 Province of British Columbia
+Copyright 2022 Province of British Columbia
 
 This work is licensed under the Creative Commons Attribution 4.0 International License.
 To view a copy of this license, visit http://creativecommons.org/licenses/by/4.0/.
