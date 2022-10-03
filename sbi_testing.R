@@ -80,14 +80,27 @@ get_sbi_archive <- function(year) {
                                      path = paste0("G:/Snow/sbi_archive/sbi_archive_bymonth"))
 
     sbi_temp_s <- sbi_temp[[1]] %>%
-      dplyr::select(-Sitesused_SBInew_oldnormals, -SBI_new_oldnormals, -mean_percentnormal_sbiprev,
-                    -InitialSitesused, -sites_with_data)
+      dplyr::select(-Sitesused_SBInew_oldnormals,
+                    -mean_percentnormal_sbiprev,
+                    -InitialSitesused, -sites_with_data,
+                    -mean_normal_prev)
   }
 
-  sbi_archive <- do.call(rbind,
-                         lapply(dates[1],
-                          sbi_year))
+  sbi_archive_list <- lapply(dates,
+                             sbi_year)
+
+  sbi_archive <- do.call(dplyr::bind_rows,
+            sbi_archive_list) %>%
+    dplyr::arrange(Survey_period)
 
   # Save unfolded by year
   write.csv(sbi_archive, file = paste0("G:/Snow/sbi_archive/sbi_archive_byyear/sbi_archive_", year, ".csv"))
 }
+
+test_2000 <- get_sbi_archive(year = 2000)
+
+# Run over multiple years
+years_test <- seq(2000, 2022, by = 1)
+
+lapply(years_test,
+       get_sbi_archive)
