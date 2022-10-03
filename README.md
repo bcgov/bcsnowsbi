@@ -20,13 +20,13 @@ See the License for the specific language governing permissions and limitations 
 This package contains functions that calculate the snow basin index
 (SBI) value for a particular basin or basins within British Columbia,
 Canada. Snow basin index values are used by the BC River Forecast Centre
-within their monthly/bimonthly Snow Bulletin to decsribe how much snow
+within their monthly/bimonthly Snow Bulletin to describe how much snow
 is present within a specific area relative to typical conditions.
 
 ### Features
 
 The package contains several functions for retrieving snow basin index
-values for a particlar basin within the province (details below).
+values for a particular basin within the province (details below).
 
 This package also depends on two snow-specific packages to function:
 
@@ -36,10 +36,10 @@ This package also depends on two snow-specific packages to function:
 2.  bcsnowstats() - This function calculates statistics for specific
     sites that are used within the SBI calculation (specifically,
     percentiles as well as normals for the period of interest). Note
-    that the sbi functions within the bcsnowsbi() package will
-    automatically assign the appropriate normal time period based on the
-    water year of the survey period you are looking for SBI values for
-    (more detail in Usage section of this document).
+    that the functions that calculate SBI values within the bcsnowsbi()
+    package will automatically assign the appropriate normal time period
+    based on the water year of the survey period you are looking for SBI
+    values for (more detail in Usage section of this document).
 
 ### Installation
 
@@ -101,7 +101,7 @@ function).
 
 ### Project Status
 
-In progress
+In progress.
 
 ### Getting Help or Reporting an Issue
 
