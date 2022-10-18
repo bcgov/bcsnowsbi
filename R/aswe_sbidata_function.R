@@ -35,7 +35,7 @@ aswe_sbidata <- function(ASWE_sites, date_sbi, survey_period, get_year, colnames
                                      get_year = get_year,
                                      normal_min = normal_min,
                                      normal_max = normal_max,
-                                     force = FALSE)
+                                     force = TRUE)
 
 
  # Filter the ASWE sites by the survey period - include the normal mean - s2
